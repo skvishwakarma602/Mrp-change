@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MRP Change & Audit App - Offline First</title>
+    
+    <!-- PWA & Mobile App Meta Tags -->
+    <meta name="theme-color" content="#2563eb">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MRP Audit">
+
+    <!-- Dynamic Manifest and Icons Placeholder -->
+    <link rel="manifest" id="pwaManifest">
+    <link rel="apple-touch-icon" id="appleTouchIcon">
+    <link rel="icon" type="image/png" id="faviconLink">
+
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></link>
+    <!-- html5-qrcode Library for Live Camera Scanning -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
+    <!-- SheetJS for Clean Native Excel Export -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <!-- jsPDF & AutoTable for Professional PDF Generation with Photos -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
+    <!-- Print Stylesheet -->
+    <style>
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #reportSection, #reportSection * {
+                visibility: visible;
+            }
+            #reportSection {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                box-shadow: none !important;
+                padding: 0 !important;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans pb-12">
+
+    <!-- Header with Custom MRP Logo Badge & Network Status -->
+    <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50 no-print">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
+            <h1 class="text-sm sm:text-lg font-bold flex items-center">
+                <span class="bg-white text-blue-600 px-2 py-0.5 rounded-md font-black mr-2 text-xs sm:text-sm shadow-sm flex items-center gap-1">
+                    <i class="fa-solid fa-tags text-blue-600 text-xs"></i> MRP
+                </span> 
+                MRP & Barcode Audit Tool
+            </h1>
+            <div class="flex items-center space-x-3">
+                <!-- Offline / Online Badge -->
+                <span id="networkStatusBadge" class="bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 shadow-sm">
+                    <span id="networkDot" class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
+                    <span id="networkText">Online (Synced)</span>
+                </span>
+                <!-- Audit Date Picker -->
+                <div class="flex items-center space-x-1.5 bg-blue-700 px-3 py-1.5 rounded-lg text-sm">
+                    <i class="fa-regular fa-calendar"></i>
+                    <input type="date" id="auditDate" class="bg-transparent text-white outline-none cursor-pointer">
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl mx-auto p-4 space-y-6">
+
+        <!-- Input Form Card -->
+        <div class="bg-white p-5 rounded-xl shadow-md space-y-4 no-print">
+            <h2 id="formTitle" class="text-md font-semibold text-gray-700 border-b pb-2"><i class="fa-solid fa-cart-plus text-blue-600 mr-2"></i> Product Entry Form</h2>
+            
+            <!-- Hidden Input to track editing item ID -->
+            <input type="hidden" id="editItemId" value="">
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <!-- Barcode Input & Scanner Trigger -->
+                <div class="md:col-span-2">
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Barcode Scan / Enter (Numbers Only)</label>
+                    <div class="flex gap-2">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="barcodeInput" placeholder="Scan or type barcode number..." class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" oninput="lookupProduct()" onkeypress="if(event.key === 'Enter') lookupProduct()">
+                        <button onclick="startScanner()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm whitespace-nowrap flex items-center shadow"><i class="fa-solid fa-camera mr-1.5"></i> Scan Barcode</button>
+                        <button onclick="lookupProduct()" class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm" title="Search Product"><i class="fa-solid fa-magnifying-glass"></i></button>
+                    </div>
+                </div>
+
+                <!-- Product Name -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Product Name</label>
+                    <input type="text" id="productName" placeholder="Auto-filled or manual name" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Gramage / Weight -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Gramage / Weight</label>
+                    <input type="text" id="productWeight" placeholder="e.g., 500g, 1kg, 5kg" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Bill MRP (Old MRP) -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Bill MRP (₹)</label>
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="oldMrp" placeholder="Previous / Bill price" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                </div>
+
+                <!-- Product MRP (New MRP) with Enter Key Support -->
+                <div>
+                    <label class="block text-xs font-medium text-gray-600 mb-1">Product MRP (₹) <span class="text-blue-600 text-[10px]">(Press Enter to Add)</span></label>
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="newMrp" placeholder="Updated current price" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" onkeypress="if(event.key === 'Enter') addProductToList()">
+                </div>
+            </div>
+
+            <!-- Photo Capture / Upload Section -->
+            <div class="pt-2 border-t">
+                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fa-solid fa-camera mr-1"></i> Capture / Upload Photos (High Quality 95% HD)</label>
+                <div class="flex items-center space-x-3">
+                    <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-dashed border-gray-400 px-4 py-2 rounded-lg text-xs font-medium text-gray-700 flex items-center">
+                        <i class="fa-solid fa-camera-retro mr-2 text-blue-600 text-base"></i> Camera / Gallery
+                        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple class="hidden" onchange="handleImageUpload(event)">
+                    </label>
+                    <span id="photoCount" class="text-xs text-gray-500">0 photo(s) selected</span>
+                </div>
+                <!-- Image Preview Grid with Rotate & Delete Options -->
+                <div id="imagePreviewContainer" class="flex flex-wrap gap-2 mt-3"></div>
+            </div>
+
+            <!-- Add / Update Action Button -->
+            <button id="submitBtn" onclick="addProductToList()" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm shadow transition"><i class="fa-solid fa-plus mr-1"></i> Add to Report List (Offline Safe)</button>
+            <button id="cancelEditBtn" onclick="cancelEdit()" class="w-full bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 rounded-lg text-sm shadow transition hidden mt-2">Cancel Edit</button>
+        </div>
+
+        <!-- Filter Card with Month-wise, Date-wise & Search -->
+        <div class="bg-white p-4 rounded-xl shadow-md space-y-3 no-print">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wider"><i class="fa-solid fa-filter mr-1.5 text-blue-600"></i> Filter Report Data (Month-wise & Date-wise)</h3>
+                <button onclick="clearFilters()" class="text-xs text-blue-600 hover:underline font-medium"><i class="fa-solid fa-rotate-right mr-1"></i> Clear Filters (Show All)</button>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <!-- Month Filter -->
+                <div>
+                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Filter by Month (Month-wise)</label>
+                    <input type="month" id="filterMonth" oninput="renderTable()" class="w-full border rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 cursor-pointer">
+                </div>
+                <!-- Specific Date Filter (Default set to Today) -->
+                <div>
+                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Filter by Specific Date (Day-wise)</label>
+                    <input type="date" id="filterDate" oninput="renderTable()" class="w-full border rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 cursor-pointer">
+                </div>
+                <!-- Search Product / Barcode -->
+                <div>
+                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Search Product / Barcode</label>
+                    <input type="text" id="filterSearch" placeholder="Type name or barcode..." oninput="renderTable()" class="w-full border rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                </div>
+            </div>
+        </div>
+
+        <!-- Printable Report Area -->
+        <div id="reportSection" class="bg-white p-5 rounded-xl shadow-md space-y-4">
+            <div class="flex justify-between items-center border-b pb-3">
+                <div>
+                    <h2 class="text-md font-bold text-gray-800">Daily Audit Report (IndexedDB Offline Store)</h2>
+                    <p class="text-xs text-gray-500">Active Filter: <span id="displayDate" class="font-medium text-blue-600">Today's Data</span> | Generated: <span id="reportTimestamp">--</span></p>
+                </div>
+                <span class="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-medium">Total Items: <span id="itemCount">0</span></span>
+            </div>
+
+            <!-- Table -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                    <thead>
+                        <tr class="bg-gray-100 border-b text-gray-700">
+                            <th class="p-2">#</th>
+                            <th class="p-2">Barcode / Name</th>
+                            <th class="p-2">Weight</th>
+                            <th class="p-2">Bill MRP</th>
+                            <th class="p-2">Product MRP</th>
+                            <th class="p-2">Variance (₹ / %)</th>
+                            <th class="p-2">Date Added</th>
+                            <th class="p-2">Photos</th>
+                            <th class="p-2 text-center no-print">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="itemsTableBody">
+                        <tr id="emptyRow">
+                            <td colspan="9" class="text-center py-6 text-gray-400">Loading products from database...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Export & Action Buttons Layout -->
+        <div class="bg-white p-4 rounded-xl shadow-md space-y-3 no-print">
+            <!-- Row 1: PDF Report & Excel Report -->
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="shareOrDownloadPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center transition">
+                    <i class="fa-solid fa-file-pdf mr-2 text-base"></i> Share Professional PDF (Portrait)
+                </button>
+                <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center transition">
+                    <i class="fa-solid fa-file-excel mr-2 text-base"></i> Excel Report
+                </button>
+            </div>
+
+            <!-- Row 2: Backup Data (JSON) & Restore Data -->
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="exportJSON()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center transition">
+                    <i class="fa-solid fa-floppy-disk mr-2 text-base"></i> Backup Data (JSON)
+                </button>
+                <label class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center cursor-pointer transition">
+                    <i class="fa-solid fa-folder-open mr-2 text-base"></i> Restore Data
+                    <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importJSON(event)">
+                </label>
+            </div>
+
+            <!-- Row 3: Share Full Report on WhatsApp (Full Width) -->
+            <div>
+                <button onclick="sendWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3.5 px-4 rounded-lg text-sm shadow flex items-center justify-center transition">
+                    <i class="fa-brands fa-whatsapp mr-2 text-lg"></i> Share Full Report on WhatsApp
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Barcode Scanner Modal Popup with Flashlight Control -->
+    <div id="scannerModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex flex-col items-center justify-center hidden p-4 no-print">
+        <div class="bg-white rounded-xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
+            <div class="flex justify-between items-center border-b pb-2">
+                <h3 class="font-bold text-gray-800 text-sm"><i class="fa-solid fa-camera mr-2 text-blue-600"></i> Scan Barcode via Camera</h3>
+                <button onclick="closeScanner()" class="text-gray-500 hover:text-gray-700 text-xl font-bold px-2">&times;</button>
+            </div>
+            <!-- Scanner Container with fixed height to prevent blank preview -->
+            <div id="interactive" class="w-full h-[250px] overflow-hidden rounded-lg bg-black relative"></div>
+            <div class="flex gap-2">
+                <button id="torchToggleBtn" onclick="toggleTorch()" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-3 rounded-lg text-xs flex items-center justify-center shadow"><i class="fa-solid fa-bolt mr-1"></i> Flashlight: OFF</button>
+                <button onclick="closeScanner()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 rounded-lg text-xs">Cancel / Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Gallery & Swipe Lightbox Modal with Rotation Option -->
+    <div id="zoomModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center hidden p-4 no-print" onclick="closeZoomModal()" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event)">
+        <div class="relative max-w-2xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
+            <button onclick="closeZoomModal()" class="absolute -top-12 right-0 text-white text-3xl font-bold px-3 hover:text-gray-300 z-10">&times;</button>
+            
+            <div class="relative w-full flex items-center justify-center min-h-[300px]">
+                <button id="prevImageBtn" onclick="prevImage(event)" class="absolute left-2 bg-black bg-opacity-60 text-white p-3 rounded-full hover:bg-opacity-80 transition text-lg z-10 hidden"><i class="fa-solid fa-chevron-left"></i></button>
+                <img id="zoomedImage" src="" class="max-h-[75vh] max-w-full rounded-lg shadow-2xl object-contain bg-black">
+                <button id="nextImageBtn" onclick="nextImage(event)" class="absolute right-2 bg-black bg-opacity-60 text-white p-3 rounded-full hover:bg-opacity-80 transition text-lg z-10 hidden"><i class="fa-solid fa-chevron-right"></i></button>
+            </div>
+
+            <div class="flex items-center justify-between w-full mt-3 px-2 gap-2">
+                <span id="imageCounter" class="text-white text-xs bg-gray-800 px-3 py-1 rounded-full">Photo 1 of 1</span>
+                <button onclick="rotateActiveGalleryImage()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg shadow flex items-center gap-1.5"><i class="fa-solid fa-rotate-right"></i> Rotate 90°</button>
+                <p class="text-gray-300 text-xs hidden sm:block">Swipe or use arrows to browse</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic & Offline-First IndexedDB Engine -->
+    <script>
+        // 1. DYNAMIC PWA MANIFEST & ICON GENERATOR
+        function generateAppIconsAndManifest() {
+            function createPngIcon(size) {
+                const canvas = document.createElement('canvas');
+                canvas.width = size;
+                canvas.height = size;
+                const ctx = canvas.getContext('2d');
+                
+                ctx.fillStyle = '#2563eb';
+                if (ctx.roundRect) {
+                    ctx.beginPath();
+                    ctx.roundRect(0, 0, size, size, size * 0.22);
+                    ctx.fill();
+                } else {
+                    ctx.fillRect(0, 0, size, size);
+                }
+
+                ctx.fillStyle = 'white';
+                ctx.fillRect(size * 0.25, size * 0.22, size * 0.5, size * 0.56);
+
+                ctx.fillStyle = '#1e3a8a';
+                ctx.font = `900 ${size * 0.22}px Arial`;
+                ctx.textAlign = 'center';
+                ctx.fillText('MRP', size * 0.5, size * 0.68);
+
+                ctx.fillStyle = '#16a34a';
+                ctx.beginPath();
+                ctx.arc(size * 0.74, size * 0.74, size * 0.18, 0, Math.PI * 2);
+                ctx.fill();
+
+                ctx.strokeStyle = 'white';
+                ctx.lineWidth = size * 0.03;
+                ctx.lineCap = 'round';
+                ctx.lineJoin = 'round';
+                ctx.beginPath();
+                ctx.moveTo(size * 0.68, size * 0.74);
+                ctx.lineTo(size * 0.80, size * 0.74);
+                ctx.moveTo(size * 0.74, size * 0.68);
+                ctx.lineTo(size * 0.80, size * 0.74);
+                ctx.lineTo(size * 0.74, size * 0.80);
+                ctx.stroke();
+
+                return canvas.toDataURL('image/png');
+            }
+
+            const icon192 = createPngIcon(192);
+            const icon512 = createPngIcon(512);
+
+            document.getElementById('faviconLink').href = icon192;
+            document.getElementById('appleTouchIcon').href = icon192;
+
+            const manifestObj = {
+                "name": "MRP and Barcode Audit Tool",
+                "short_name": "MRP Audit",
+                "start_url": "./",
+                "display": "standalone",
+                "background_color": "#f3f4f6",
+                "theme_color": "#2563eb",
+                "icons": [
+                    { "src": icon192, "sizes": "192x192", "type": "image/png" },
+                    { "src": icon512, "sizes": "512x512", "type": "image/png" }
+                ]
+            };
+
+            const blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
+            document.getElementById('pwaManifest').setAttribute('href', URL.createObjectURL(blob));
+        }
+
+        generateAppIconsAndManifest();
+
+        // 2. INDEXEDDB OFFLINE STORAGE & AUTO-MIGRATION ENGINE
+        let db = null;
+        let auditItems = [];
+
+        function initIndexedDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open('MRPAuditOfflineDB', 1);
+
+                request.onerror = (event) => {
+                    console.error("IndexedDB error:", event.target.error);
+                    reject(event.target.error);
+                };
+
+                request.onsuccess = (event) => {
+                    db = event.target.result;
+                    loadAllAuditItems().then(async (items) => {
+                        if (items.length === 0) {
+                            const legacyData = localStorage.getItem('auditItems');
+                            if (legacyData) {
+                                try {
+                                    const parsedLegacy = JSON.parse(legacyData);
+                                    if (Array.isArray(parsedLegacy) && parsedLegacy.length > 0) {
+                                        const transaction = db.transaction(['auditItems'], 'readwrite');
+                                        const store = transaction.objectStore('auditItems');
+                                        for (let item of parsedLegacy) {
+                                            store.put(item);
+                                        }
+                                        transaction.oncomplete = () => {
+                                            loadAllAuditItems();
+                                        };
+                                    }
+                                } catch (e) {
+                                    console.error("Migration parse error:", e);
+                                }
+                            }
+                        }
+                        resolve(db);
+                    });
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const database = event.target.result;
+                    if (!database.objectStoreNames.contains('auditItems')) {
+                        database.createObjectStore('auditItems', { keyPath: 'id' });
+                    }
+                };
+            });
+        }
+
+        function saveItemToIndexedDB(item) {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    resolve();
+                    return;
+                }
+                const transaction = db.transaction(['auditItems'], 'readwrite');
+                const store = transaction.objectStore('auditItems');
+                const request = store.put(item);
+
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function deleteItemFromIndexedDB(id) {
+            return new Promise((resolve, reject) => {
+                if (!db) return resolve();
+                const transaction = db.transaction(['auditItems'], 'readwrite');
+                const store = transaction.objectStore('auditItems');
+                const request = store.delete(id);
+
+                request.onsuccess = () => resolve();
+                request.onerror = (e) => reject(e.target.error);
+            });
+        }
+
+        function loadAllAuditItems() {
+            return new Promise((resolve, reject) => {
+                if (!db) {
+                    resolve([]);
+                    return;
+                }
+                const transaction = db.transaction(['auditItems'], 'readonly');
+                const store = transaction.objectStore('auditItems');
+                const request = store.getAll();
+
+                request.onsuccess = (event) => {
+                    auditItems = event.target.result || [];
+                    auditItems.sort((a, b) => b.id - a.id);
+                    renderTable();
+                    resolve(auditItems);
+                };
+
+                request.onerror = (e) => {
+                    console.error("Error loading items:", e);
+                    reject(e.target.error);
+                };
+            });
+        }
+
+        // 3. NETWORK STATUS MONITOR
+        window.addEventListener('online', handleOnlineStatus);
+        window.addEventListener('offline', handleOfflineStatus);
+
+        function handleOnlineStatus() {
+            const badge = document.getElementById('networkStatusBadge');
+            const dot = document.getElementById('networkDot');
+            const text = document.getElementById('networkText');
+            badge.className = "bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 shadow-sm";
+            dot.className = "w-2 h-2 rounded-full bg-emerald-300 animate-pulse";
+            text.innerText = "Online (Synced)";
+        }
+
+        function handleOfflineStatus() {
+            const badge = document.getElementById('networkStatusBadge');
+            const dot = document.getElementById('networkDot');
+            const text = document.getElementById('networkText');
+            badge.className = "bg-amber-600 text-white text-[11px] px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 shadow-sm";
+            dot.className = "w-2 h-2 rounded-full bg-amber-200";
+            text.innerText = "Offline Mode (Saved Locally)";
+        }
+
+        // IST DATE HELPER
+        function getISTDateString() {
+            try {
+                return new Intl.DateTimeFormat('en-CA', {
+                    timeZone: 'Asia/Kolkata',
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                }).format(new Date());
+            } catch (e) {
+                return new Date().toISOString().split('T')[0];
+            }
+        }
+
+        const dateInput = document.getElementById('auditDate');
+        const displayDate = document.getElementById('displayDate');
+        const reportTimestamp = document.getElementById('reportTimestamp');
+        const filterMonthInput = document.getElementById('filterMonth');
+        const filterDateInput = document.getElementById('filterDate');
+        
+        const today = getISTDateString();
+        dateInput.value = today;
+        
+        // Set Default Date Filters to Today
+        filterDateInput.value = today;
+        filterMonthInput.value = today.substring(0, 7);
+        updateDisplayFilterText();
+
+        const currentFormattedTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
+        reportTimestamp.innerText = `${formatDateToDDMMYYYY(today)} ${currentFormattedTime}`;
+
+        dateInput.addEventListener('change', () => {
+            updateDisplayFilterText();
+        });
+
+        filterMonthInput.addEventListener('change', (e) => {
+            if(e.target.value) filterDateInput.value = '';
+            updateDisplayFilterText();
+        });
+
+        filterDateInput.addEventListener('change', (e) => {
+            if(e.target.value) {
+                filterMonthInput.value = e.target.value.substring(0, 7);
+            }
+            updateDisplayFilterText();
+        });
+
+        function updateDisplayFilterText() {
+            const mVal = filterMonthInput.value;
+            const dVal = filterDateInput.value;
+            if (dVal) {
+                displayDate.innerText = `Date: ${formatDateToDDMMYYYY(dVal)}`;
+            } else if (mVal) {
+                const [yr, mo] = mVal.split('-');
+                const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+                displayDate.innerText = `Month: ${monthNames[parseInt(mo, 10) - 1]} ${yr}`;
+            } else {
+                displayDate.innerText = "All Data";
+            }
+        }
+
+        function formatDateToDDMMYYYY(dateStr) {
+            if (!dateStr || dateStr.includes('All')) return dateStr;
+            const parts = dateStr.split('-');
+            if (parts.length === 3) {
+                return `${parts[2]}-${parts[1]}-${parts[0]}`;
+            }
+            return dateStr;
+        }
+
+        // EXPANDED UNIVERSAL DATABASE (Indian + International FMCG Barcodes)
+        const productDatabase = {
+            "8901030547201": { name: "Surf Excel Easy Wash", weight: "1kg" },
+            "8901490223114": { name: "Tata Salt Vacuum Evaporated", weight: "1kg" },
+            "8901058853102": { name: "Colgate Strong Teeth", weight: "200g" },
+            "8901058853010": { name: "Colgate Strong Teeth", weight: "100g" },
+            "8901725152201": { name: "Maggi 2-Minute Noodles", weight: "70g" },
+            "8901725153208": { name: "Maggi 2-Minute Noodles Family Pack", weight: "560g" },
+            "8901719101111": { name: "Parle-G Glucose Biscuits", weight: "250g" },
+            "8901262010044": { name: "Amul Butter", weight: "500g" },
+            "8901262010020": { name: "Amul Butter", weight: "100g" },
+            "8901314031525": { name: "Cadbury Dairy Milk", weight: "50g" },
+            "8901030365027": { name: "Wheel Detergent Powder", weight: "1kg" },
+            "8901526102102": { name: "Dabur Red Toothpaste", weight: "200g" },
+            "8903363001184": { name: "Sugar", weight: "5kg" },
+            "8901030231339": { name: "Surf Excel Matic Front Load", weight: "1kg" },
+            "8901030623257": { name: "Rin Detergent Bar", weight: "250g" },
+            "8901526101235": { name: "Dabur Honey", weight: "500g" },
+            "8901490352104": { name: "Tata Sampann Toor Dal", weight: "1kg" },
+            "8906007281233": { name: "Aashirvaad Shudh Chakki Atta", weight: "5kg" },
+            "8901262010259": { name: "Amul Taza Homogenized Milk", weight: "500ml" },
+            "8901138843201": { name: "Cadbury 5 Star", weight: "40g" },
+            "8901030831121": { name: "Clinic Plus Shampoo", weight: "340ml" },
+            "8901030811239": { name: "Lux International Soap", weight: "150g" },
+            "5449000000996": { name: "Coca-Cola", weight: "750ml" },
+            "5449000131805": { name: "Sprite", weight: "750ml" },
+            "5449000000453": { name: "Thums Up", weight: "750ml" }
+        };
+
+        let currentPhotos = [];
+        let html5QrCode = null;
+        let torchState = false;
+
+        let activeGalleryPhotos = [];
+        let activeGalleryIndex = 0;
+        let activeGalleryItemId = null;
+        let touchStartX = 0;
+        let touchEndX = 0;
+
+        initIndexedDB().then(() => {
+            if (!navigator.onLine) handleOfflineStatus();
+        });
+
+        function exportJSON() {
+            if (auditItems.length === 0) {
+                alert('Export ke liye koi data available nahi hai.');
+                return;
+            }
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(auditItems, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            const dateStr = formatDateToDDMMYYYY(getISTDateString());
+            downloadAnchor.setAttribute("download", `MRP_Audit_Backup_${dateStr}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        async function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = async function(e) {
+                try {
+                    const importedData = JSON.parse(e.target.result);
+                    if (Array.isArray(importedData)) {
+                        for(let item of importedData) {
+                            if(!auditItems.some(existing => existing.id === item.id)) {
+                                auditItems.push(item);
+                                await saveItemToIndexedDB(item);
+                            }
+                        }
+                        renderTable();
+                        alert('✅ Backup successfully import ho gaya hai!');
+                    } else {
+                        alert('⚠️ Invalid JSON format.');
+                    }
+                } catch (err) {
+                    console.error("JSON Parse Error:", err);
+                    alert('⚠️ File read karne mein error aaya.');
+                }
+                event.target.value = '';
+            };
+            reader.readAsText(file);
+        }
+
+        function openGalleryModal(photos, startIndex = 0, itemId = null) {
+            if (!photos || photos.length === 0) return;
+            activeGalleryPhotos = photos;
+            activeGalleryIndex = startIndex;
+            activeGalleryItemId = itemId;
+            updateZoomModalImage();
+            document.getElementById('zoomModal').classList.remove('hidden');
+        }
+
+        function openItemPhotosModal(itemId, photoIndex) {
+            const item = auditItems.find(i => i.id === itemId);
+            if (item && item.photos && item.photos.length > 0) {
+                openGalleryModal(item.photos, photoIndex, itemId);
+            }
+        }
+
+        function openCurrentPhotosModal(photoIndex) {
+            if (currentPhotos && currentPhotos.length > 0) {
+                openGalleryModal(currentPhotos, photoIndex, null);
+            }
+        }
+
+        function updateZoomModalImage() {
+            const zoomedImg = document.getElementById('zoomedImage');
+            const counter = document.getElementById('imageCounter');
+            const prevBtn = document.getElementById('prevImageBtn');
+            const nextBtn = document.getElementById('nextImageBtn');
+
+            zoomedImg.src = activeGalleryPhotos[activeGalleryIndex];
+            if (counter) counter.innerText = `Photo ${activeGalleryIndex + 1} of ${activeGalleryPhotos.length}`;
+
+            if (activeGalleryPhotos.length > 1) {
+                if (prevBtn) prevBtn.classList.remove('hidden');
+                if (nextBtn) nextBtn.classList.remove('hidden');
+            } else {
+                if (prevBtn) prevBtn.classList.add('hidden');
+                if (nextBtn) nextBtn.classList.add('hidden');
+            }
+        }
+
+        function nextImage(event) {
+            if (event) event.stopPropagation();
+            if (activeGalleryPhotos.length <= 1) return;
+            activeGalleryIndex = (activeGalleryIndex + 1) % activeGalleryPhotos.length;
+            updateZoomModalImage();
+        }
+
+        function prevImage(event) {
+            if (event) event.stopPropagation();
+            if (activeGalleryPhotos.length <= 1) return;
+            activeGalleryIndex = (activeGalleryIndex - 1 + activeGalleryPhotos.length) % activeGalleryPhotos.length;
+            updateZoomModalImage();
+        }
+
+        function closeZoomModal() {
+            document.getElementById('zoomModal').classList.add('hidden');
+            activeGalleryItemId = null;
+        }
+
+        function handleTouchStart(e) { touchStartX = e.changedTouches[0].screenX; }
+        function handleTouchEnd(e) {
+            touchEndX = e.changedTouches[0].screenX;
+            if (touchEndX < touchStartX - 50) nextImage();
+            if (touchEndX > touchStartX + 50) prevImage();
+        }
+
+        // IMAGE ROTATION UTILITY (95% HD Quality)
+        function rotateBase64Image(base64String, degrees = 90) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    if (degrees === 90 || degrees === 270) {
+                        canvas.width = img.height;
+                        canvas.height = img.width;
+                    } else {
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                    }
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    ctx.save();
+                    ctx.translate(canvas.width / 2, canvas.height / 2);
+                    ctx.rotate((degrees * Math.PI) / 180);
+                    ctx.drawImage(img, -img.width / 2, -img.height / 2);
+                    ctx.restore();
+                    resolve(canvas.toDataURL('image/jpeg', 0.95));
+                };
+                img.src = base64String;
+            });
+        }
+
+        async function rotateCurrentPhoto(index) {
+            currentPhotos[index] = await rotateBase64Image(currentPhotos[index], 90);
+            renderPhotoPreviews();
+        }
+
+        async function rotateActiveGalleryImage() {
+            if (activeGalleryPhotos.length === 0) return;
+            const rotated = await rotateBase64Image(activeGalleryPhotos[activeGalleryIndex], 90);
+            activeGalleryPhotos[activeGalleryIndex] = rotated;
+            updateZoomModalImage();
+
+            if (activeGalleryItemId !== null) {
+                const item = auditItems.find(i => i.id === activeGalleryItemId);
+                if (item && item.photos) {
+                    item.photos[activeGalleryIndex] = rotated;
+                    await saveItemToIndexedDB(item);
+                    renderTable();
+                }
+            } else {
+                currentPhotos[activeGalleryIndex] = rotated;
+                renderPhotoPreviews();
+            }
+        }
+
+        // CAMERA SCANNER WITH ERROR HANDLING & FALLBACK (Fixes blank preview)
+        async function startScanner() {
+            const modal = document.getElementById('scannerModal');
+            modal.classList.remove('hidden');
+
+            setTimeout(async () => {
+                try {
+                    if (!html5QrCode) html5QrCode = new Html5Qrcode("interactive");
+                    
+                    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+                    try {
+                        await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
+                    } catch (envErr) {
+                        console.warn("Environment camera failed, trying default camera...", envErr);
+                        await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
+                    }
+                } catch (err) {
+                    console.error("Camera start error:", err);
+                    alert("⚠️ Camera Access Error! Please grant camera permission or ensure HTTPS connection.");
+                    closeScanner();
+                }
+            }, 300);
+        }
+
+        function onScanSuccess(decodedText) {
+            document.getElementById('barcodeInput').value = decodedText;
+            closeScanner();
+            lookupProduct();
+        }
+
+        async function toggleTorch() {
+            try {
+                const videoElement = document.querySelector('#interactive video');
+                if (videoElement && videoElement.srcObject) {
+                    const track = videoElement.srcObject.getVideoTracks()[0];
+                    if (track.getCapabilities().torch) {
+                        torchState = !torchState;
+                        await track.applyConstraints({ advanced: [{ torch: torchState }] });
+                    }
+                }
+            } catch (err) {}
+        }
+
+        function closeScanner() {
+            document.getElementById('scannerModal').classList.add('hidden');
+            torchState = false;
+            if (html5QrCode && html5QrCode.isScanning) {
+                html5QrCode.stop().then(() => html5QrCode.clear()).catch(() => {});
+            }
+        }
+
+        // UNIVERSAL PRODUCT LOOKUP (Local Database + Open Food Facts Global API Fallback)
+        async function lookupProduct() {
+            const barcode = document.getElementById('barcodeInput').value.trim();
+            if(!barcode) return;
+
+            // 1. Check local expanded database
+            if(productDatabase[barcode]) {
+                const prod = productDatabase[barcode];
+                document.getElementById('productName').value = prod.name;
+                document.getElementById('productWeight').value = prod.weight;
+                return;
+            }
+
+            // 2. Fetch from Open Food Facts API for any international / Indian product
+            try {
+                const response = await fetch(`https://world.openfoodfacts.org/api/v0/product/${barcode}.json`);
+                const data = await response.json();
+                if (data.status === 1 && data.product) {
+                    const prod = data.product;
+                    const name = prod.product_name || prod.product_name_en || "Unknown Product";
+                    const weight = prod.quantity || prod.serving_size || "Standard";
+                    
+                    document.getElementById('productName').value = name;
+                    document.getElementById('productWeight').value = weight;
+
+                    // Automatically fetch and attach product photo if available
+                    if (prod.image_front_url) {
+                        fetchImageAsBase64(prod.image_front_url, function(base64Img) {
+                            if (base64Img) {
+                                currentPhotos.push(base64Img);
+                                renderPhotoPreviews();
+                            }
+                        });
+                    }
+                }
+            } catch (e) {
+                console.log("API lookup failed or offline:", e);
+            }
+        }
+
+        function fetchImageAsBase64(url, callback) {
+            fetch(url)
+                .then(res => res.blob())
+                .then(blob => {
+                    const reader = new FileReader();
+                    reader.onloadend = () => callback(reader.result);
+                    reader.readAsDataURL(blob);
+                })
+                .catch(() => callback(null));
+        }
+
+        // High Definition (HD 95%) image upload settings
+        function handleImageUpload(event) {
+            const files = event.target.files;
+            for(let file of files) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = new Image();
+                    img.onload = function() {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width, height = img.height;
+                        if (width > 1600) { height *= 1600 / width; width = 1600; }
+                        canvas.width = width; canvas.height = height;
+                        canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                        currentPhotos.push(canvas.toDataURL('image/jpeg', 0.95));
+                        renderPhotoPreviews();
+                    }
+                    img.src = e.target.result;
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function renderPhotoPreviews() {
+            const container = document.getElementById('imagePreviewContainer');
+            container.innerHTML = '';
+            document.getElementById('photoCount').innerText = `${currentPhotos.length} photo(s) selected`;
+            currentPhotos.forEach((photo, index) => {
+                container.innerHTML += `
+                    <div class="relative w-16 h-16 border rounded-lg overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center">
+                        <img src="${photo}" class="w-full h-full object-cover cursor-pointer" onclick="openCurrentPhotosModal(${index})">
+                        <button type="button" onclick="rotateCurrentPhoto(${index})" class="absolute bottom-0 left-0 bg-blue-600 text-white w-5 h-5 flex items-center justify-center text-[10px]" title="Rotate Photo">↻</button>
+                        <button type="button" onclick="currentPhotos.splice(${index},1);renderPhotoPreviews()" class="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 flex items-center justify-center text-xs" title="Delete">&times;</button>
+                    </div>`;
+            });
+        }
+
+        async function addProductToList() {
+            const editId = document.getElementById('editItemId').value;
+            const barcode = document.getElementById('barcodeInput').value.trim() || 'N/A';
+            const name = document.getElementById('productName').value.trim();
+            const weight = document.getElementById('productWeight').value.trim();
+            const oldMrp = document.getElementById('oldMrp').value.trim();
+            const newMrp = document.getElementById('newMrp').value.trim();
+            const selectedDate = dateInput.value;
+
+            if(!name || !newMrp || !oldMrp) {
+                alert('⚠️ Kripya Product Name, Bill MRP (Old MRP) aur Product MRP (New MRP) zaroor bharein!');
+                return;
+            }
+
+            if (parseFloat(oldMrp) === parseFloat(newMrp)) {
+                alert('⚠️ Error: Bill MRP (Old MRP) aur Product MRP (New MRP) same nahi ho sakte! Kripya sahi pricing enter karein.');
+                return;
+            }
+
+            let targetItem;
+            if(editId) {
+                const itemIndex = auditItems.findIndex(i => i.id == editId);
+                if(itemIndex !== -1) {
+                    auditItems[itemIndex].barcode = barcode;
+                    auditItems[itemIndex].name = name;
+                    auditItems[itemIndex].weight = weight || '-';
+                    auditItems[itemIndex].oldMrp = oldMrp;
+                    auditItems[itemIndex].newMrp = newMrp;
+                    auditItems[itemIndex].dateAdded = selectedDate;
+                    if(currentPhotos.length > 0) auditItems[itemIndex].photos = [...currentPhotos];
+                    targetItem = auditItems[itemIndex];
+                }
+                cancelEdit();
+            } else {
+                targetItem = {
+                    id: Date.now(),
+                    barcode,
+                    name,
+                    weight: weight || '-',
+                    oldMrp,
+                    newMrp,
+                    dateAdded: selectedDate,
+                    photos: [...currentPhotos]
+                };
+                auditItems.unshift(targetItem);
+                resetForm();
+            }
+
+            filterMonthInput.value = selectedDate.substring(0, 7);
+            filterDateInput.value = selectedDate;
+            updateDisplayFilterText();
+
+            await saveItemToIndexedDB(targetItem);
+            renderTable();
+            document.getElementById('barcodeInput').focus();
+        }
+
+        function editItem(id) {
+            const item = auditItems.find(i => i.id === id);
+            if(!item) return;
+            document.getElementById('editItemId').value = item.id;
+            document.getElementById('barcodeInput').value = item.barcode !== 'N/A' ? item.barcode : '';
+            document.getElementById('productName').value = item.name;
+            document.getElementById('productWeight').value = item.weight !== '-' ? item.weight : '';
+            document.getElementById('oldMrp').value = item.oldMrp !== '-' ? item.oldMrp : '';
+            document.getElementById('newMrp').value = item.newMrp;
+            dateInput.value = item.dateAdded;
+            updateDisplayFilterText();
+            currentPhotos = [...item.photos];
+            renderPhotoPreviews();
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-orange-600 mr-2"></i> Edit Product Entry`;
+            document.getElementById('submitBtn').innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i> Update Product`;
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function cancelEdit() {
+            document.getElementById('editItemId').value = '';
+            resetForm();
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-cart-plus text-blue-600 mr-2"></i> Product Entry Form`;
+            document.getElementById('submitBtn').innerHTML = `<i class="fa-solid fa-plus mr-1"></i> Add to Report List (Offline Safe)`;
+            document.getElementById('cancelEditBtn').classList.add('hidden');
+        }
+
+        function resetForm() {
+            document.getElementById('editItemId').value = '';
+            document.getElementById('barcodeInput').value = '';
+            document.getElementById('productName').value = '';
+            document.getElementById('productWeight').value = '';
+            document.getElementById('oldMrp').value = '';
+            document.getElementById('newMrp').value = '';
+            currentPhotos = [];
+            document.getElementById('photoInput').value = '';
+            renderPhotoPreviews();
+        }
+
+        function getFilteredItems() {
+            const filterMonth = filterMonthInput.value;
+            const filterDate = filterDateInput.value;
+            const filterSearch = document.getElementById('filterSearch').value.toLowerCase().trim();
+
+            return auditItems.filter(item => {
+                const itemMonth = item.dateAdded ? item.dateAdded.substring(0, 7) : '';
+                const matchesMonth = !filterMonth || itemMonth === filterMonth;
+                const matchesDate = !filterDate || item.dateAdded === filterDate;
+                const matchesSearch = !filterSearch || item.name.toLowerCase().includes(filterSearch) || item.barcode.toLowerCase().includes(filterSearch);
+                return matchesMonth && matchesDate && matchesSearch;
+            });
+        }
+
+        function clearFilters() {
+            filterMonthInput.value = '';
+            filterDateInput.value = '';
+            document.getElementById('filterSearch').value = '';
+            updateDisplayFilterText();
+            renderTable();
+        }
+
+        function renderTable() {
+            const tbody = document.getElementById('itemsTableBody');
+            const filteredItems = getFilteredItems();
+            document.getElementById('itemCount').innerText = filteredItems.length;
+
+            if(filteredItems.length === 0) {
+                tbody.innerHTML = `<tr id="emptyRow"><td colspan="9" class="text-center py-6 text-gray-400">No products found for the selected month/date.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = '';
+            filteredItems.forEach((item, index) => {
+                let photosHtml = '<span class="text-gray-400 text-[10px]">No Photo</span>';
+                if(item.photos && item.photos.length > 0) {
+                    photosHtml = '<div class="flex items-center space-x-1.5 flex-wrap gap-1">';
+                    item.photos.forEach((p, pIdx) => {
+                        photosHtml += `<img src="${p}" class="w-9 h-9 object-cover rounded-md border cursor-pointer shadow-sm" onclick="openItemPhotosModal(${item.id}, ${pIdx})">`;
+                    });
+                    photosHtml += '</div>';
+                }
+
+                let varianceHtml = '<span class="text-gray-400">-</span>';
+                const oVal = parseFloat(item.oldMrp);
+                const nVal = parseFloat(item.newMrp);
+                if (!isNaN(oVal) && !isNaN(nVal) && oVal > 0) {
+                    const diff = nVal - oVal;
+                    const pct = ((diff / oVal) * 100).toFixed(1);
+                    if (diff > 0) {
+                        varianceHtml = `<span class="text-emerald-700 font-semibold">+₹${diff} (+${pct}%)</span>`;
+                    } else if (diff < 0) {
+                        varianceHtml = `<span class="text-red-600 font-semibold">-₹${Math.abs(diff)} (${pct}%)</span>`;
+                    } else {
+                        varianceHtml = `<span class="text-gray-600 font-medium">No Change</span>`;
+                    }
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'border-b hover:bg-gray-50';
+                tr.innerHTML = `
+                    <td class="p-2 font-medium">${index + 1}</td>
+                    <td class="p-2">
+                        <div class="font-semibold text-gray-800">${item.name}</div>
+                        <div class="text-gray-400 text-[10px]">BC: ${item.barcode}</div>
+                    </td>
+                    <td class="p-2">${item.weight}</td>
+                    <td class="p-2 text-red-600 line-through">Rs. ${item.oldMrp}</td>
+                    <td class="p-2 font-bold text-green-700">Rs. ${item.newMrp}</td>
+                    <td class="p-2">${varianceHtml}</td>
+                    <td class="p-2 font-medium text-gray-600">${formatDateToDDMMYYYY(item.dateAdded)}</td>
+                    <td class="p-2">${photosHtml}</td>
+                    <td class="p-2 text-center">
+                        <div class="flex items-center justify-center space-x-2">
+                            <button onclick="shareSingleWhatsApp(${item.id})" class="text-emerald-600 p-2 bg-emerald-50 rounded-lg shadow-sm" title="Share on WhatsApp"><i class="fa-brands fa-whatsapp text-sm"></i></button>
+                            <button onclick="editItem(${item.id})" class="text-blue-600 p-2 bg-blue-50 rounded-lg shadow-sm" title="Edit"><i class="fa-solid fa-pen text-sm"></i></button>
+                            <button onclick="deleteItem(${item.id})" class="text-red-500 p-2 bg-red-50 rounded-lg shadow-sm" title="Delete"><i class="fa-solid fa-trash text-sm"></i></button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        async function deleteItem(id) {
+            auditItems = auditItems.filter(item => item.id !== id);
+            await deleteItemFromIndexedDB(id);
+            renderTable();
+        }
+
+        // SHARE SINGLE ARTICLE ON WHATSAPP WITH VARIANCE & PHOTO ATTACHMENTS
+        async function shareSingleWhatsApp(id) {
+            const item = auditItems.find(i => i.id === id);
+            if(!item) return;
+
+            let oVal = parseFloat(item.oldMrp) || 0;
+            let nVal = parseFloat(item.newMrp) || 0;
+            let diff = nVal - oVal;
+            let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
+            let varianceStr = diff > 0 ? `+Rs. ${diff} (+${pct}%)` : (diff < 0 ? `-Rs. ${Math.abs(diff)} (${pct}%)` : 'No Change');
+
+            let text = `📦 *MRP CHANGE IN DC* 📦\n\n*Product:* ${item.name} (${item.weight})\n• *Barcode*: ${item.barcode}\n• *Bill  MRP*: Rs. ${item.oldMrp}\n• *Product MRP*: Rs. ${item.newMrp}\n• *Variance*: ${varianceStr}\n• *Date*: ${formatDateToDDMMYYYY(item.dateAdded)}`;
+
+            if (navigator.canShare && item.photos && item.photos.length > 0) {
+                try {
+                    const files = [];
+                    for (let idx = 0; idx < item.photos.length; idx++) {
+                        const res = await fetch(item.photos[idx]);
+                        const blob = await res.blob();
+                        files.push(new File([blob], `product_${id}_${idx+1}.jpg`, { type: 'image/jpeg' }));
+                    }
+                    if (navigator.canShare({ files: files })) {
+                        await navigator.share({
+                            files: files,
+                            title: item.name,
+                            text: text
+                        });
+                        return;
+                    }
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Web share files failed:', err);
+                    }
+                }
+            }
+
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        // SHARE FULL REPORT ON WHATSAPP WITH VARIANCE
+        function sendWhatsApp() {
+            const filtered = getFilteredItems();
+            if(filtered.length === 0) {
+                alert('Share karne ke liye koi data available nahi hai.');
+                return;
+            }
+
+            let text = `📦 *MRP CHANGE IN DC - AUDIT REPORT* 📦\nTotal Items: ${filtered.length}\n\n`;
+            filtered.forEach((item, i) => {
+                let oVal = parseFloat(item.oldMrp) || 0;
+                let nVal = parseFloat(item.newMrp) || 0;
+                let diff = nVal - oVal;
+                let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
+                let varianceStr = diff > 0 ? `+Rs. ${diff} (+${pct}%)` : (diff < 0 ? `-Rs. ${Math.abs(diff)} (${pct}%)` : 'No Change');
+
+                text += `${i+1}. *${item.name}* (${item.weight})\n`;
+                text += `• Barcode: ${item.barcode}\n`;
+                text += `• Bill MRP: Rs. ${item.oldMrp} | Product MRP: Rs. ${item.newMrp}\n`;
+                text += `• Variance: ${varianceStr}\n`;
+                text += `• Date: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n`;
+            });
+
+            window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+        }
+
+        // PROFESSIONAL PORTRAIT PDF GENERATOR WITH DYNAMIC PHOTO COLUMNS
+        async function shareOrDownloadPDF() {
+            const filtered = getFilteredItems();
+            if(filtered.length === 0) {
+                alert('PDF generate karne ke liye koi data available nahi hai.');
+                return;
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('p', 'mm', 'a4');
+
+            // Header Banner Background
+            doc.setFillColor(37, 99, 235);
+            doc.rect(0, 0, 210, 20, 'F');
+            doc.setFont("helvetica", "bold");
+            doc.setFontSize(13);
+            doc.setTextColor(255, 255, 255);
+            doc.text("MRP CHANGE IN DC - AUDIT REPORT", 14, 13);
+
+            doc.setFont("helvetica", "normal");
+            doc.setFontSize(8.5);
+            doc.setTextColor(100, 100, 100);
+            const nowStr = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+            doc.text(`Generated: ${nowStr} | Total Filtered Items: ${filtered.length}`, 14, 26);
+
+            let maxPhotos = 1;
+            filtered.forEach(item => {
+                if (item.photos && item.photos.length > maxPhotos) {
+                    maxPhotos = item.photos.length;
+                }
+            });
+
+            let headRow = ['#', 'Product Name / Barcode', 'Wt', 'Old MRP', 'New MRP', 'Variance', 'Date'];
+            for (let p = 1; p <= maxPhotos; p++) {
+                headRow.push(`Photo ${p}`);
+            }
+
+            let columnStyles = {
+                0: { cellWidth: 7, halign: 'center' },
+                1: { cellWidth: 38 },
+                2: { cellWidth: 14, halign: 'center' },
+                3: { cellWidth: 16, halign: 'right' },
+                4: { cellWidth: 16, halign: 'right' },
+                5: { cellWidth: 20 },
+                6: { cellWidth: 18, halign: 'center' }
+            };
+
+            let fixedWidthsSum = 7 + 38 + 14 + 16 + 16 + 20 + 18;
+            let remainingWidth = 190 - fixedWidthsSum;
+            let photoColWidth = Math.floor(remainingWidth / maxPhotos);
+            if (photoColWidth < 14) photoColWidth = 14;
+
+            for (let p = 0; p < maxPhotos; p++) {
+                columnStyles[7 + p] = { cellWidth: photoColWidth, halign: 'center' };
+            }
+
+            let tableData = [];
+            for (let i = 0; i < filtered.length; i++) {
+                let item = filtered[i];
+                let oVal = parseFloat(item.oldMrp) || 0;
+                let nVal = parseFloat(item.newMrp) || 0;
+                let diff = nVal - oVal;
+                let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
+                let varianceStr = diff > 0 ? `+${diff} (+${pct}%)` : (diff < 0 ? `${diff} (${pct}%)` : '0 (0.0%)');
+
+                let row = [
+                    i + 1,
+                    `${item.name}\nBC: ${item.barcode}`,
+                    item.weight,
+                    `Rs. ${item.oldMrp}`,
+                    `Rs. ${item.newMrp}`,
+                    varianceStr,
+                    formatDateToDDMMYYYY(item.dateAdded)
+                ];
+
+                for (let p = 0; p < maxPhotos; p++) {
+                    row.push('');
+                }
+                tableData.push(row);
+            }
+
+            doc.autoTable({
+                startY: 32,
+                margin: { left: 10, right: 10, top: 32, bottom: 15 },
+                head: [headRow],
+                body: tableData,
+                theme: 'grid',
+                headStyles: { fillColor: [37, 99, 235], textColor: [255, 255, 255], fontStyle: 'bold', fontSize: 8 },
+                bodyStyles: { fontSize: 7.5, textColor: [50, 50, 50] },
+                styles: { cellPadding: 2, valign: 'middle', overflow: 'linebreak' },
+                columnStyles: columnStyles,
+                didParseCell: function (data) {
+                    if (data.section === 'body' && data.column.index >= 7) {
+                        data.cell.minCellHeight = photoColWidth + 2; 
+                    }
+                },
+                didDrawCell: function (data) {
+                    if (data.section === 'body' && data.column.index >= 7) {
+                        let photoIdx = data.column.index - 7;
+                        let item = filtered[data.row.index];
+                        if (item && item.photos && item.photos[photoIdx]) {
+                            let cellX = data.cell.x;
+                            let cellY = data.cell.y;
+                            let cellWidth = data.cell.width;
+                            let cellHeight = data.cell.height;
+
+                            let imgSize = Math.min(cellWidth, cellHeight) - 4;
+                            let x = cellX + (cellWidth - imgSize) / 2;
+                            let y = cellY + (cellHeight - imgSize) / 2;
+
+                            try {
+                                doc.setFillColor(245, 247, 250);
+                                doc.rect(cellX, cellY, cellWidth, cellHeight, 'F');
+                                doc.addImage(item.photos[photoIdx], 'JPEG', x, y, imgSize, imgSize);
+                                doc.setDrawColor(180, 180, 180);
+                                doc.setLineWidth(0.2);
+                                doc.rect(cellX, cellY, cellWidth, cellHeight);
+                            } catch (e) {
+                                console.error("PDF Image render error:", e);
+                            }
+                        }
+                    }
+                },
+                didDrawPage: function (data) {
+                    let pageStr = "Page " + doc.internal.getNumberOfPages();
+                    doc.setFontSize(8);
+                    doc.setTextColor(150, 150, 150);
+                    doc.text(pageStr, 210 - 10, 287, { align: 'right' });
+                    doc.text("MRP & Barcode Audit Tool - Offline First", 10, 287);
+                }
+            });
+
+            const now = new Date();
+            const datePart = String(now.getDate()).padStart(2, '0') + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + now.getFullYear();
+            const timePart = String(now.getHours()).padStart(2, '0') + '-' + String(now.getMinutes()).padStart(2, '0');
+            const fileName = `MRP_change_DC_Portrait_${datePart}_${timePart}.pdf`;
+
+            const pdfBlob = doc.output('blob');
+            const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
+
+            if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+                try {
+                    await navigator.share({
+                        files: [pdfFile],
+                        title: 'MRP Change Report',
+                        text: '📦 *MRP CHANGE IN DC* - Audit Report PDF (Portrait Format)'
+                    });
+                    return;
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Share failed:', err);
+                    }
+                }
+            }
+
+            doc.save(fileName);
+        }
+
+        function exportToExcel() {
+            const filtered = getFilteredItems();
+            if(filtered.length === 0) {
+                alert('Excel export ke liye koi data available nahi hai.');
+                return;
+            }
+            const worksheet = XLSX.utils.json_to_sheet(filtered);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "MRP Audit");
+            
+            const now = new Date();
+            const datePart = String(now.getDate()).padStart(2, '0') + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + now.getFullYear();
+            XLSX.writeFile(workbook, `MRP change DC_${datePart}.xlsx`);
+        }
+    </script>
+</body>
+</html>
