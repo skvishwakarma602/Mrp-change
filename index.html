@@ -104,9 +104,28 @@
                     <input type="text" id="productName" placeholder="Auto-filled or manual name" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
 
-                <!-- Gramage / Weight -->
+                <!-- Gramage / Weight with Larger Dropdown & < > Buttons -->
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Gramage / Weight</label>
+                    <div class="flex justify-between items-center mb-1">
+                        <label class="block text-xs font-medium text-gray-600">Gramage / Weight</label>
+                        <div class="flex items-center space-x-1.5">
+                            <button type="button" onclick="changeWeight(-1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-bold shadow-sm" title="Previous Weight">&lt;</button>
+                            <select id="weightSelect" onchange="selectPresetWeight(this.value)" class="bg-gray-50 border border-gray-300 rounded-md px-2.5 py-1 text-sm font-medium outline-none cursor-pointer shadow-sm">
+                                <option value="500gm">500gm</option>
+                                <option value="1 kg">1 kg</option>
+                                <option value="400gm">400gm</option>
+                                <option value="200gm">200gm</option>
+                                <option value="250gm">250gm</option>
+                                <option value="100gm">100gm</option>
+                                <option value="50gm">50gm</option>
+                                <option value="20gm">20gm</option>
+                                <option value="5 ltr">5 ltr</option>
+                                <option value="2 ltr">2 ltr</option>
+                                <option value="1 ltr">1 ltr</option>
+                            </select>
+                            <button type="button" onclick="changeWeight(1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-bold shadow-sm" title="Next Weight">&gt;</button>
+                        </div>
+                    </div>
                     <input type="text" id="productWeight" placeholder="e.g., 500g, 1kg, 5kg" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
 
@@ -123,9 +142,9 @@
                 </div>
             </div>
 
-            <!-- Photo Capture / Upload Section -->
+            <!-- Photo Capture / Upload Section (Optimized 75% HD Storage) -->
             <div class="pt-2 border-t">
-                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fa-solid fa-camera mr-1"></i> Capture / Upload Photos (High Quality 95% HD)</label>
+                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fa-solid fa-camera mr-1"></i> Capture / Upload Photos (Optimized 75% HD Storage)</label>
                 <div class="flex items-center space-x-3">
                     <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-dashed border-gray-400 px-4 py-2 rounded-lg text-xs font-medium text-gray-700 flex items-center">
                         <i class="fa-solid fa-camera-retro mr-2 text-blue-600 text-base"></i> Camera / Gallery
@@ -242,7 +261,7 @@
                 <h3 class="font-bold text-gray-800 text-sm"><i class="fa-solid fa-camera mr-2 text-blue-600"></i> Scan Barcode via Camera</h3>
                 <button onclick="closeScanner()" class="text-gray-500 hover:text-gray-700 text-xl font-bold px-2">&times;</button>
             </div>
-            <!-- Scanner Container with fixed height to prevent blank preview -->
+            <!-- Scanner Container with fixed height -->
             <div id="interactive" class="w-full h-[250px] overflow-hidden rounded-lg bg-black relative"></div>
             <div class="flex gap-2">
                 <button id="torchToggleBtn" onclick="toggleTorch()" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-3 rounded-lg text-xs flex items-center justify-center shadow"><i class="fa-solid fa-bolt mr-1"></i> Flashlight: OFF</button>
@@ -342,7 +361,28 @@
 
         generateAppIconsAndManifest();
 
-        // 2. INDEXEDDB OFFLINE STORAGE & AUTO-MIGRATION ENGINE
+        // 2. WEIGHT PRESET SELECTOR FUNCTIONS (< > BUTTONS & DROPDOWN)
+        function selectPresetWeight(val) {
+            document.getElementById('productWeight').value = val;
+        }
+
+        function changeWeight(direction) {
+            const select = document.getElementById('weightSelect');
+            let currentIndex = select.selectedIndex;
+            if (currentIndex === -1) currentIndex = 0;
+            
+            let newIndex = currentIndex + direction;
+            if (newIndex >= select.options.length) {
+                newIndex = 0; 
+            } else if (newIndex < 0) {
+                newIndex = select.options.length - 1; 
+            }
+            
+            select.selectedIndex = newIndex;
+            selectPresetWeight(select.value);
+        }
+
+        // 3. INDEXEDDB OFFLINE STORAGE & AUTO-MIGRATION ENGINE
         let db = null;
         let auditItems = [];
 
@@ -442,7 +482,7 @@
             });
         }
 
-        // 3. NETWORK STATUS MONITOR
+        // 4. NETWORK STATUS MONITOR
         window.addEventListener('online', handleOnlineStatus);
         window.addEventListener('offline', handleOfflineStatus);
 
@@ -543,21 +583,21 @@
             "8901725152201": { name: "Maggi 2-Minute Noodles", weight: "70g" },
             "8901725153208": { name: "Maggi 2-Minute Noodles Family Pack", weight: "560g" },
             "8901719101111": { name: "Parle-G Glucose Biscuits", weight: "250g" },
-            "8901262010044": { name: "Amul Butter", weight: "500g" },
-            "8901262010020": { name: "Amul Butter", weight: "100g" },
-            "8901314031525": { name: "Cadbury Dairy Milk", weight: "50g" },
+            "8901262010044": { name: "Amul Butter", weight: "500gm" },
+            "8901262010020": { name: "Amul Butter", weight: "100gm" },
+            "8901314031525": { name: "Cadbury Dairy Milk", weight: "50gm" },
             "8901030365027": { name: "Wheel Detergent Powder", weight: "1kg" },
-            "8901526102102": { name: "Dabur Red Toothpaste", weight: "200g" },
+            "8901526102102": { name: "Dabur Red Toothpaste", weight: "200gm" },
             "8903363001184": { name: "Sugar", weight: "5kg" },
             "8901030231339": { name: "Surf Excel Matic Front Load", weight: "1kg" },
-            "8901030623257": { name: "Rin Detergent Bar", weight: "250g" },
-            "8901526101235": { name: "Dabur Honey", weight: "500g" },
+            "8901030623257": { name: "Rin Detergent Bar", weight: "250gm" },
+            "8901526101235": { name: "Dabur Honey", weight: "500gm" },
             "8901490352104": { name: "Tata Sampann Toor Dal", weight: "1kg" },
             "8906007281233": { name: "Aashirvaad Shudh Chakki Atta", weight: "5kg" },
             "8901262010259": { name: "Amul Taza Homogenized Milk", weight: "500ml" },
-            "8901138843201": { name: "Cadbury 5 Star", weight: "40g" },
+            "8901138843201": { name: "Cadbury 5 Star", weight: "40gm" },
             "8901030831121": { name: "Clinic Plus Shampoo", weight: "340ml" },
-            "8901030811239": { name: "Lux International Soap", weight: "150g" },
+            "8901030811239": { name: "Lux International Soap", weight: "150gm" },
             "5449000000996": { name: "Coca-Cola", weight: "750ml" },
             "5449000131805": { name: "Sprite", weight: "750ml" },
             "5449000000453": { name: "Thums Up", weight: "750ml" }
@@ -687,7 +727,7 @@
             if (touchEndX > touchStartX + 50) prevImage();
         }
 
-        // IMAGE ROTATION UTILITY (95% HD Quality)
+        // IMAGE ROTATION UTILITY (Optimized 75% Quality)
         function rotateBase64Image(base64String, degrees = 90) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -707,7 +747,7 @@
                     ctx.rotate((degrees * Math.PI) / 180);
                     ctx.drawImage(img, -img.width / 2, -img.height / 2);
                     ctx.restore();
-                    resolve(canvas.toDataURL('image/jpeg', 0.95));
+                    resolve(canvas.toDataURL('image/jpeg', 0.75));
                 };
                 img.src = base64String;
             });
@@ -737,7 +777,7 @@
             }
         }
 
-        // CAMERA SCANNER WITH ERROR HANDLING & FALLBACK (Fixes blank preview)
+        // CAMERA SCANNER WITH ERROR HANDLING & FALLBACK
         async function startScanner() {
             const modal = document.getElementById('scannerModal');
             modal.classList.remove('hidden');
@@ -808,12 +848,11 @@
                 if (data.status === 1 && data.product) {
                     const prod = data.product;
                     const name = prod.product_name || prod.product_name_en || "Unknown Product";
-                    const weight = prod.quantity || prod.serving_size || "Standard";
+                    const weight = prod.quantity || prod.serving_size || "500gm";
                     
                     document.getElementById('productName').value = name;
                     document.getElementById('productWeight').value = weight;
 
-                    // Automatically fetch and attach product photo if available
                     if (prod.image_front_url) {
                         fetchImageAsBase64(prod.image_front_url, function(base64Img) {
                             if (base64Img) {
@@ -829,17 +868,21 @@
         }
 
         function fetchImageAsBase64(url, callback) {
-            fetch(url)
-                .then(res => res.blob())
-                .then(blob => {
-                    const reader = new FileReader();
-                    reader.onloadend = () => callback(reader.result);
-                    reader.readAsDataURL(blob);
-                })
-                .catch(() => callback(null));
+            const img = new Image();
+            img.crossOrigin = "anonymous";
+            img.onload = function() {
+                const canvas = document.createElement('canvas');
+                let width = img.width, height = img.height;
+                if (width > 1600) { height *= 1600 / width; width = 1600; }
+                canvas.width = width; canvas.height = height;
+                canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+                callback(canvas.toDataURL('image/jpeg', 0.75));
+            };
+            img.onerror = () => callback(null);
+            img.src = url;
         }
 
-        // High Definition (HD 95%) image upload settings
+        // Optimized 75% Quality Image Upload
         function handleImageUpload(event) {
             const files = event.target.files;
             for(let file of files) {
@@ -852,7 +895,7 @@
                         if (width > 1600) { height *= 1600 / width; width = 1600; }
                         canvas.width = width; canvas.height = height;
                         canvas.getContext('2d').drawImage(img, 0, 0, width, height);
-                        currentPhotos.push(canvas.toDataURL('image/jpeg', 0.95));
+                        currentPhotos.push(canvas.toDataURL('image/jpeg', 0.75));
                         renderPhotoPreviews();
                     }
                     img.src = e.target.result;
@@ -879,7 +922,7 @@
             const editId = document.getElementById('editItemId').value;
             const barcode = document.getElementById('barcodeInput').value.trim() || 'N/A';
             const name = document.getElementById('productName').value.trim();
-            const weight = document.getElementById('productWeight').value.trim();
+            const weight = document.getElementById('productWeight').value.trim() || '500gm';
             const oldMrp = document.getElementById('oldMrp').value.trim();
             const newMrp = document.getElementById('newMrp').value.trim();
             const selectedDate = dateInput.value;
@@ -900,7 +943,7 @@
                 if(itemIndex !== -1) {
                     auditItems[itemIndex].barcode = barcode;
                     auditItems[itemIndex].name = name;
-                    auditItems[itemIndex].weight = weight || '-';
+                    auditItems[itemIndex].weight = weight;
                     auditItems[itemIndex].oldMrp = oldMrp;
                     auditItems[itemIndex].newMrp = newMrp;
                     auditItems[itemIndex].dateAdded = selectedDate;
@@ -913,7 +956,7 @@
                     id: Date.now(),
                     barcode,
                     name,
-                    weight: weight || '-',
+                    weight,
                     oldMrp,
                     newMrp,
                     dateAdded: selectedDate,
