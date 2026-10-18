@@ -104,7 +104,7 @@
                     <input type="text" id="productName" placeholder="Auto-filled or manual name" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
 
-                <!-- Gramage / Weight with Larger Dropdown & < > Buttons -->
+                <!-- Gramage / Weight with Quick Priority Chips & Dropdown / < > Buttons -->
                 <div>
                     <div class="flex justify-between items-center mb-1">
                         <label class="block text-xs font-medium text-gray-600">Gramage / Weight</label>
@@ -125,6 +125,17 @@
                             </select>
                             <button type="button" onclick="changeWeight(1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-bold shadow-sm" title="Next Weight">&gt;</button>
                         </div>
+                    </div>
+                    <!-- Quick Priority 1-Click Weight Chips -->
+                    <div class="flex flex-wrap gap-1 mb-1.5">
+                        <button type="button" onclick="setQuickWeight('500gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">500gm</button>
+                        <button type="button" onclick="setQuickWeight('1 kg')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">1 kg</button>
+                        <button type="button" onclick="setQuickWeight('400gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">400gm</button>
+                        <button type="button" onclick="setQuickWeight('200gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">200gm</button>
+                        <button type="button" onclick="setQuickWeight('250gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">250gm</button>
+                        <button type="button" onclick="setQuickWeight('100gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">100gm</button>
+                        <button type="button" onclick="setQuickWeight('50gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">50gm</button>
+                        <button type="button" onclick="setQuickWeight('20gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">20gm</button>
                     </div>
                     <input type="text" id="productWeight" placeholder="e.g., 500g, 1kg, 5kg" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
                 </div>
@@ -361,7 +372,18 @@
 
         generateAppIconsAndManifest();
 
-        // 2. WEIGHT PRESET SELECTOR FUNCTIONS (< > BUTTONS & DROPDOWN)
+        // 2. WEIGHT PRESET SELECTOR & QUICK CHIPS FUNCTIONS
+        function setQuickWeight(val) {
+            document.getElementById('productWeight').value = val;
+            const select = document.getElementById('weightSelect');
+            for (let i = 0; i < select.options.length; i++) {
+                if (select.options[i].value === val) {
+                    select.selectedIndex = i;
+                    break;
+                }
+            }
+        }
+
         function selectPresetWeight(val) {
             document.getElementById('productWeight').value = val;
         }
@@ -848,10 +870,12 @@
                 if (data.status === 1 && data.product) {
                     const prod = data.product;
                     const name = prod.product_name || prod.product_name_en || "Unknown Product";
-                    const weight = prod.quantity || prod.serving_size || "500gm";
+                    const weight = prod.quantity || prod.serving_size || "";
                     
                     document.getElementById('productName').value = name;
-                    document.getElementById('productWeight').value = weight;
+                    if(weight) {
+                        document.getElementById('productWeight').value = weight;
+                    }
 
                     if (prod.image_front_url) {
                         fetchImageAsBase64(prod.image_front_url, function(base64Img) {
@@ -990,7 +1014,7 @@
             renderPhotoPreviews();
             document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-orange-600 mr-2"></i> Edit Product Entry`;
             document.getElementById('submitBtn').innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i> Update Product`;
-            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            document.getElementById('cancelEditBtn').classList.add('hidden');
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
@@ -1143,8 +1167,8 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        // SHARE FULL REPORT ON WHATSAPP WITH VARIANCE
-        function sendWhatsApp() {
+        // SHARE MULTIPLE PRODUCTS REPORT ON WHATSAPP WITH COMBINED PHOTOS & TEXT
+        async function sendWhatsApp() {
             const filtered = getFilteredItems();
             if(filtered.length === 0) {
                 alert('Share karne ke liye koi data available nahi hai.');
@@ -1166,6 +1190,34 @@
                 text += `• Date: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n`;
             });
 
+            // Try sharing multiple product photos combined with text via Web Share API
+            if (navigator.canShare) {
+                try {
+                    const files = [];
+                    for (let item of filtered) {
+                        if (item.photos && item.photos.length > 0) {
+                            // Attach first photo of each product in the filtered list
+                            const res = await fetch(item.photos[0]);
+                            const blob = await res.blob();
+                            files.push(new File([blob], `audit_product_${item.id}.jpg`, { type: 'image/jpeg' }));
+                        }
+                    }
+                    if (files.length > 0 && navigator.canShare({ files: files })) {
+                        await navigator.share({
+                            files: files,
+                            title: 'MRP Audit Report',
+                            text: text
+                        });
+                        return;
+                    }
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.error('Multiple share files failed:', err);
+                    }
+                }
+            }
+
+            // Fallback to text link if multiple file sharing is not supported by browser/device
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
