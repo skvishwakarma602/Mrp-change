@@ -1105,8 +1105,8 @@
                         <div class="text-gray-400 text-[10px]">BC: ${item.barcode}</div>
                     </td>
                     <td class="p-2">${item.weight}</td>
-                    <td class="p-2 text-red-600 line-through">Rs. ${item.oldMrp}</td>
-                    <td class="p-2 font-bold text-green-700">Rs. ${item.newMrp}</td>
+                    <td class="p-2 text-red-600 line-through">₹${item.oldMrp}</td>
+                    <td class="p-2 font-bold text-green-700">₹${item.newMrp}</td>
                     <td class="p-2">${varianceHtml}</td>
                     <td class="p-2 font-medium text-gray-600">${formatDateToDDMMYYYY(item.dateAdded)}</td>
                     <td class="p-2">${photosHtml}</td>
@@ -1128,7 +1128,7 @@
             renderTable();
         }
 
-        // SHARE SINGLE ARTICLE ON WHATSAPP WITH VARIANCE & PHOTO ATTACHMENTS
+        // SHARE SINGLE ARTICLE ON WHATSAPP (No 'Rs.' text, Clean Format)
         async function shareSingleWhatsApp(id) {
             const item = auditItems.find(i => i.id === id);
             if(!item) return;
@@ -1137,9 +1137,9 @@
             let nVal = parseFloat(item.newMrp) || 0;
             let diff = nVal - oVal;
             let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
-            let varianceStr = diff > 0 ? `+Rs. ${diff} (+${pct}%)` : (diff < 0 ? `-Rs. ${Math.abs(diff)} (${pct}%)` : 'No Change');
+            let varianceStr = diff > 0 ? `+₹${diff} (+${pct}%)` : (diff < 0 ? `-₹${Math.abs(diff)} (${pct}%)` : 'No Change');
 
-            let text = `📦 *MRP CHANGE IN DC* 📦\n\n*Product:* ${item.name} (${item.weight})\n• *Barcode*: ${item.barcode}\n• *Bill  MRP*: Rs. ${item.oldMrp}\n• *Product MRP*: Rs. ${item.newMrp}\n• *Variance*: ${varianceStr}\n• *Date*: ${formatDateToDDMMYYYY(item.dateAdded)}`;
+            let text = `📦 *MRP CHANGE IN DC* 📦\n📅 *Date*: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n*Product:* ${item.name} (${item.weight})\n• *Barcode*: ${item.barcode}\n• *Bill MRP*: ₹${item.oldMrp}\n• *Product MRP*: ₹${item.newMrp}\n• *Variance*: ${varianceStr}`;
 
             if (navigator.canShare && item.photos && item.photos.length > 0) {
                 try {
@@ -1167,7 +1167,7 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        // SHARE MULTIPLE PRODUCTS REPORT ON WHATSAPP WITH COMBINED PHOTOS & TEXT
+        // SHARE MULTIPLE PRODUCTS REPORT ON WHATSAPP (No 'Rs.' text, Clean Format)
         async function sendWhatsApp() {
             const filtered = getFilteredItems();
             if(filtered.length === 0) {
@@ -1175,19 +1175,21 @@
                 return;
             }
 
-            let text = `📦 *MRP CHANGE IN DC* 📦\nTotal Items: ${filtered.length}\n\n`;
+            // Extract Report Date
+            const reportDate = filterDateInput.value ? formatDateToDDMMYYYY(filterDateInput.value) : formatDateToDDMMYYYY(getISTDateString());
+
+            let text = `📦 *MRP CHANGE IN DC - AUDIT REPORT* 📦\n📅 *Date*: ${reportDate}\n• Total Items: ${filtered.length}\n\n`;
             filtered.forEach((item, i) => {
                 let oVal = parseFloat(item.oldMrp) || 0;
                 let nVal = parseFloat(item.newMrp) || 0;
                 let diff = nVal - oVal;
                 let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
-                let varianceStr = diff > 0 ? `+Rs. ${diff} (+${pct}%)` : (diff < 0 ? `-Rs. ${Math.abs(diff)} (${pct}%)` : 'No Change');
+                let varianceStr = diff > 0 ? `+₹${diff} (+${pct}%)` : (diff < 0 ? `-₹${Math.abs(diff)} (${pct}%)` : 'No Change');
 
                 text += `${i+1}. *${item.name}* (${item.weight})\n`;
                 text += `• Barcode: ${item.barcode}\n`;
-                text += `• Bill MRP: Rs. ${item.oldMrp} | Product MRP: Rs. ${item.newMrp}\n`;
-                text += `• Variance: ${varianceStr}\n`;
-                text += `• Date: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n`;
+                text += `• Bill MRP: ₹${item.oldMrp} | Product MRP: ₹${item.newMrp}\n`;
+                text += `• Variance: ${varianceStr}\n\n`;
             });
 
             // Try sharing multiple product photos combined with text via Web Share API
