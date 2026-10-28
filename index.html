@@ -1139,7 +1139,8 @@
             let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
             let varianceStr = diff > 0 ? `+₹${diff} (+${pct}%)` : (diff < 0 ? `-₹${Math.abs(diff)} (${pct}%)` : 'No Change');
 
-            let text = `📦 *MRP CHANGE IN DC* 📦\n📅 *Date*: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n*Product:* ${item.name} (${item.weight})\n• *Barcode*: ${item.barcode}\n• *Bill MRP*: ₹${item.oldMrp}\n• *Product MRP*: ₹${item.newMrp}\n• *Variance*: ${varianceStr}`;
+            let text = `📦 *
+ DC* 📦\n📅 *Date*: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n*Product:* ${item.name} (${item.weight})\n• *Barcode*: ${item.barcode}\n• *Bill MRP*: ₹${item.oldMrp}\n• *Product MRP*: ₹${item.newMrp}\n• *Variance*: ${varianceStr}`;
 
             if (navigator.canShare && item.photos && item.photos.length > 0) {
                 try {
@@ -1178,7 +1179,7 @@
             // Extract Report Date
             const reportDate = filterDateInput.value ? formatDateToDDMMYYYY(filterDateInput.value) : formatDateToDDMMYYYY(getISTDateString());
 
-            let text = `📦 *MRP CHANGE IN DC - AUDIT REPORT* 📦\n📅 *Date*: ${reportDate}\n• Total Items: ${filtered.length}\n\n`;
+            let text = `📦 *MRP CHANGE IN DC* 📦\n📅 *Date*: ${reportDate}\n• Total Items: ${filtered.length}\n\n`;
             filtered.forEach((item, i) => {
                 let oVal = parseFloat(item.oldMrp) || 0;
                 let nVal = parseFloat(item.newMrp) || 0;
