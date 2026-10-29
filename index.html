@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MRP Change & Audit App - Offline First & Firebase</title>
+    <title>MRP Change & Audit App - Compact UI & Offline First</title>
     
     <!-- PWA & Mobile App Meta Tags -->
     <meta name="theme-color" content="#2563eb">
@@ -56,65 +56,76 @@
         }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans pb-12">
+<body class="bg-gray-100 text-gray-800 font-sans pb-16">
 
     <!-- Header with Custom MRP Logo Badge & Network Status -->
-    <header class="bg-blue-600 text-white p-4 shadow-md sticky top-0 z-50 no-print">
-        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-2">
-            <h1 class="text-sm sm:text-lg font-bold flex items-center">
-                <span class="bg-white text-blue-600 px-2 py-0.5 rounded-md font-black mr-2 text-xs sm:text-sm shadow-sm flex items-center gap-1">
-                    <i class="fa-solid fa-tags text-blue-600 text-xs"></i> MRP
+    <header class="bg-blue-600 text-white p-2.5 shadow-md sticky top-0 z-50 no-print">
+        <div class="max-w-4xl mx-auto flex flex-row justify-between items-center gap-2">
+            <h1 class="text-xs sm:text-sm font-bold flex items-center">
+                <span class="bg-white text-blue-600 px-1.5 py-0.5 rounded font-black mr-1.5 text-[11px] shadow-sm flex items-center gap-1">
+                    <i class="fa-solid fa-tags text-blue-600 text-[10px]"></i> MRP
                 </span> 
-                MRP & Barcode Audit Tool (Cloud Sync)
+                MRP Audit Tool
             </h1>
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center space-x-2">
                 <!-- Offline / Online Badge -->
-                <span id="networkStatusBadge" class="bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 shadow-sm">
-                    <span id="networkDot" class="w-2 h-2 rounded-full bg-emerald-300 animate-pulse"></span>
-                    <span id="networkText">Online (Synced)</span>
+                <span id="networkStatusBadge" class="bg-emerald-700 text-white text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shadow-sm">
+                    <span id="networkDot" class="w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse"></span>
+                    <span id="networkText">Online</span>
                 </span>
                 <!-- Audit Date Picker -->
-                <div class="flex items-center space-x-1.5 bg-blue-700 px-3 py-1.5 rounded-lg text-sm">
-                    <i class="fa-regular fa-calendar"></i>
+                <div class="flex items-center space-x-1 bg-blue-700 px-2 py-0.5 rounded text-[11px]">
+                    <i class="fa-regular fa-calendar text-[10px]"></i>
                     <input type="date" id="auditDate" class="bg-transparent text-white outline-none cursor-pointer">
                 </div>
             </div>
         </div>
     </header>
 
-    <main class="max-w-4xl mx-auto p-4 space-y-6">
+    <!-- TOP COMPACT NAVIGATION TABS (No Horizontal Scroll Needed) -->
+    <nav class="bg-white shadow-sm border-b sticky top-[45px] sm:top-[49px] z-40 no-print">
+        <div class="max-w-4xl mx-auto px-2 py-1.5 flex gap-1.5">
+            <button onclick="switchTab('entryTab')" id="btn-entryTab" class="tab-btn flex-1 bg-blue-600 text-white font-semibold py-1.5 px-2 rounded-lg text-[11px] sm:text-xs shadow transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-cart-plus"></i> Entry
+            </button>
+            <button onclick="switchTab('reportTab')" id="btn-reportTab" class="tab-btn flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-1.5 px-2 rounded-lg text-[11px] sm:text-xs transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-table-list"></i> Report & Export
+            </button>
+            <button onclick="switchTab('dbTab')" id="btn-dbTab" class="tab-btn flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-1.5 px-2 rounded-lg text-[11px] sm:text-xs transition flex items-center justify-center gap-1">
+                <i class="fa-solid fa-database"></i> Cleanup
+            </button>
+        </div>
+    </nav>
 
-        <!-- Input Form Card -->
-        <div class="bg-white p-5 rounded-xl shadow-md space-y-4 no-print">
-            <h2 id="formTitle" class="text-md font-semibold text-gray-700 border-b pb-2"><i class="fa-solid fa-cart-plus text-blue-600 mr-2"></i> Product Entry Form</h2>
+    <main class="max-w-4xl mx-auto p-3 space-y-4">
+
+        <!-- SECTION 1: COMPACT PRODUCT ENTRY FORM -->
+        <div id="entryTab" class="tab-section bg-white p-3.5 rounded-xl shadow-md space-y-3 no-print">
+            <h2 id="formTitle" class="text-xs sm:text-sm font-semibold text-gray-700 border-b pb-1.5"><i class="fa-solid fa-cart-plus text-blue-600 mr-1.5"></i> Product Entry Form</h2>
             
-            <!-- Hidden Input to track editing item ID -->
             <input type="hidden" id="editItemId" value="">
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- Barcode Input & Scanner Trigger -->
-                <div class="md:col-span-2">
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Barcode Scan / Enter (Numbers Only - Local Prefill Enabled)</label>
-                    <div class="flex gap-2">
-                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="barcodeInput" placeholder="Scan or type barcode number..." class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" oninput="lookupProduct()" onkeypress="if(event.key === 'Enter') lookupProduct()">
-                        <button onclick="startScanner()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm whitespace-nowrap flex items-center shadow"><i class="fa-solid fa-camera mr-1.5"></i> Scan Barcode</button>
-                        <button onclick="lookupProduct()" class="bg-gray-700 hover:bg-gray-800 text-white px-3 py-2 rounded-lg text-sm" title="Search Product"><i class="fa-solid fa-magnifying-glass"></i></button>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div class="sm:col-span-2">
+                    <label class="block text-[11px] font-medium text-gray-600 mb-0.5">Barcode Scan / Enter (Numbers Only)</label>
+                    <div class="flex gap-1.5">
+                        <input type="text" inputmode="numeric" pattern="[0-9]*" id="barcodeInput" placeholder="Scan or type barcode..." class="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none" oninput="lookupProduct()" onkeypress="if(event.key === 'Enter') lookupProduct()">
+                        <button onclick="startScanner()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs whitespace-nowrap flex items-center shadow"><i class="fa-solid fa-camera mr-1"></i> Scan</button>
+                        <button onclick="lookupProduct()" class="bg-gray-700 hover:bg-gray-800 text-white px-2.5 py-1.5 rounded-lg text-xs" title="Search"><i class="fa-solid fa-magnifying-glass"></i></button>
                     </div>
                 </div>
 
-                <!-- Product Name -->
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Product Name</label>
-                    <input type="text" id="productName" placeholder="Auto-filled or manual name" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="block text-[11px] font-medium text-gray-600 mb-0.5">Product Name</label>
+                    <input type="text" id="productName" placeholder="Product name" class="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-gray-50 focus:ring-1 focus:ring-blue-500 outline-none">
                 </div>
 
-                <!-- Gramage / Weight with Quick Priority Chips & Dropdown / < > Buttons -->
                 <div>
-                    <div class="flex justify-between items-center mb-1">
-                        <label class="block text-xs font-medium text-gray-600">Gramage / Weight</label>
-                        <div class="flex items-center space-x-1.5">
-                            <button type="button" onclick="changeWeight(-1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-bold shadow-sm" title="Previous Weight">&lt;</button>
-                            <select id="weightSelect" onchange="selectPresetWeight(this.value)" class="bg-gray-50 border border-gray-300 rounded-md px-2.5 py-1 text-sm font-medium outline-none cursor-pointer shadow-sm">
+                    <div class="flex justify-between items-center mb-0.5">
+                        <label class="block text-[11px] font-medium text-gray-600">Gramage / Weight</label>
+                        <div class="flex items-center space-x-1">
+                            <button type="button" onclick="changeWeight(-1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-0.5 rounded text-xs font-bold" title="Prev">&lt;</button>
+                            <select id="weightSelect" onchange="selectPresetWeight(this.value)" class="bg-gray-50 border border-gray-300 rounded px-1.5 py-0.5 text-[11px] font-medium outline-none cursor-pointer">
                                 <option value="500gm">500gm</option>
                                 <option value="1 kg">1 kg</option>
                                 <option value="400gm">400gm</option>
@@ -127,218 +138,197 @@
                                 <option value="2 ltr">2 ltr</option>
                                 <option value="1 ltr">1 ltr</option>
                             </select>
-                            <button type="button" onclick="changeWeight(1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-3 py-1 rounded-md text-sm font-bold shadow-sm" title="Next Weight">&gt;</button>
+                            <button type="button" onclick="changeWeight(1)" class="bg-blue-100 hover:bg-blue-200 text-blue-700 px-2 py-0.5 rounded text-xs font-bold" title="Next">&gt;</button>
                         </div>
                     </div>
-                    <!-- Quick Priority 1-Click Weight Chips -->
-                    <div class="flex flex-wrap gap-1 mb-1.5">
-                        <button type="button" onclick="setQuickWeight('500gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">500gm</button>
-                        <button type="button" onclick="setQuickWeight('1 kg')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">1 kg</button>
-                        <button type="button" onclick="setQuickWeight('400gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">400gm</button>
-                        <button type="button" onclick="setQuickWeight('200gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">200gm</button>
-                        <button type="button" onclick="setQuickWeight('250gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">250gm</button>
-                        <button type="button" onclick="setQuickWeight('100gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">100gm</button>
-                        <button type="button" onclick="setQuickWeight('50gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">50gm</button>
-                        <button type="button" onclick="setQuickWeight('20gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-2 py-0.5 rounded text-[11px] font-semibold">20gm</button>
+                    <div class="flex flex-wrap gap-1 mb-1">
+                        <button type="button" onclick="setQuickWeight('500gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">500gm</button>
+                        <button type="button" onclick="setQuickWeight('1 kg')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">1 kg</button>
+                        <button type="button" onclick="setQuickWeight('400gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">400gm</button>
+                        <button type="button" onclick="setQuickWeight('200gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">200gm</button>
+                        <button type="button" onclick="setQuickWeight('250gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">250gm</button>
+                        <button type="button" onclick="setQuickWeight('100gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">100gm</button>
+                        <button type="button" onclick="setQuickWeight('50gm')" class="bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 px-1.5 py-0.2 rounded text-[10px] font-semibold">50gm</button>
                     </div>
-                    <input type="text" id="productWeight" placeholder="e.g., 500g, 1kg, 5kg" class="w-full border rounded-lg px-3 py-2 text-sm bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none">
+                    <input type="text" id="productWeight" placeholder="e.g., 500g, 1kg" class="w-full border rounded-lg px-2.5 py-1.5 text-xs bg-gray-50 focus:ring-1 focus:ring-blue-500 outline-none">
                 </div>
 
-                <!-- Bill MRP (Old MRP) -->
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Bill MRP () <span class="text-gray-400 text-[10px]">(Prefilled from local history)</span></label>
-                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="oldMrp" placeholder="Previous / Bill price" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                    <label class="block text-[11px] font-medium text-gray-600 mb-0.5">Bill MRP ()</label>
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="oldMrp" placeholder="Previous / Bill price" class="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none">
                 </div>
 
-                <!-- Product MRP (New MRP) with Enter Key Support -->
                 <div>
-                    <label class="block text-xs font-medium text-gray-600 mb-1">Product MRP () <span class="text-blue-600 text-[10px]">(Blank for entry - Press Enter to Add)</span></label>
-                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="newMrp" placeholder="Updated current price" class="w-full border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 outline-none" onkeypress="if(event.key === 'Enter') addProductToList()">
+                    <label class="block text-[11px] font-medium text-gray-600 mb-0.5">Product MRP () <span class="text-blue-600 text-[10px]">(Press Enter)</span></label>
+                    <input type="number" inputmode="numeric" pattern="[0-9]*" id="newMrp" placeholder="Updated price" class="w-full border rounded-lg px-2.5 py-1.5 text-xs focus:ring-1 focus:ring-blue-500 outline-none" onkeypress="if(event.key === 'Enter') addProductToList()">
                 </div>
             </div>
 
-            <!-- Photo Capture / Upload Section (Optimized 75% HD Storage) -->
-            <div class="pt-2 border-t">
-                <label class="block text-xs font-medium text-gray-600 mb-1"><i class="fa-solid fa-camera mr-1"></i> Capture / Upload Photos (Optimized 75% HD Storage)</label>
-                <div class="flex items-center space-x-3">
-                    <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-dashed border-gray-400 px-4 py-2 rounded-lg text-xs font-medium text-gray-700 flex items-center">
-                        <i class="fa-solid fa-camera-retro mr-2 text-blue-600 text-base"></i> Camera / Gallery
+            <div class="pt-1.5 border-t flex items-center justify-between">
+                <div class="flex items-center space-x-2">
+                    <label class="cursor-pointer bg-gray-100 hover:bg-gray-200 border border-dashed border-gray-400 px-3 py-1.5 rounded-lg text-[11px] font-medium text-gray-700 flex items-center">
+                        <i class="fa-solid fa-camera mr-1 text-blue-600"></i> Add Photo
                         <input type="file" id="photoInput" accept="image/*" capture="environment" multiple class="hidden" onchange="handleImageUpload(event)">
                     </label>
-                    <span id="photoCount" class="text-xs text-gray-500">0 photo(s) selected</span>
+                    <span id="photoCount" class="text-[11px] text-gray-500">0 photo</span>
                 </div>
-                <!-- Image Preview Grid with Rotate & Delete Options -->
-                <div id="imagePreviewContainer" class="flex flex-wrap gap-2 mt-3"></div>
+                <div id="imagePreviewContainer" class="flex flex-wrap gap-1.5"></div>
             </div>
 
-            <!-- Add / Update Action Button -->
-            <button id="submitBtn" onclick="addProductToList()" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg text-sm shadow transition"><i class="fa-solid fa-plus mr-1"></i> Add to Report List (Offline & Cloud Safe)</button>
-            <button id="cancelEditBtn" onclick="cancelEdit()" class="w-full bg-gray-400 hover:bg-gray-500 text-white font-medium py-2 rounded-lg text-sm shadow transition hidden mt-2">Cancel Edit</button>
+            <button id="submitBtn" onclick="addProductToList()" class="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2 rounded-lg text-xs shadow transition"><i class="fa-solid fa-plus mr-1"></i> Add to Report List</button>
+            <button id="cancelEditBtn" onclick="cancelEdit()" class="w-full bg-gray-400 hover:bg-gray-500 text-white font-medium py-1.5 rounded-lg text-xs shadow transition hidden">Cancel Edit</button>
         </div>
 
-        <!-- Filter Card with Month-wise, Date-wise & Search -->
-        <div class="bg-white p-4 rounded-xl shadow-md space-y-3 no-print">
-            <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="text-xs font-semibold text-gray-700 uppercase tracking-wider"><i class="fa-solid fa-filter mr-1.5 text-blue-600"></i> Filter Report Data (Month-wise & Date-wise)</h3>
-                <button onclick="clearFilters()" class="text-xs text-blue-600 hover:underline font-medium"><i class="fa-solid fa-rotate-right mr-1"></i> Clear Filters (Show All)</button>
+        <!-- SECTION 2: REPORT, FILTER & EXPORT -->
+        <div id="reportTab" class="tab-section hidden space-y-4">
+            <div class="bg-white p-3 rounded-xl shadow-md space-y-2.5 no-print">
+                <div class="flex justify-between items-center border-b pb-1.5">
+                    <h3 class="text-[11px] font-semibold text-gray-700 uppercase tracking-wider"><i class="fa-solid fa-filter mr-1 text-blue-600"></i> Filter Report Data</h3>
+                    <button onclick="clearFilters()" class="text-[11px] text-blue-600 hover:underline font-medium"><i class="fa-solid fa-rotate-right mr-1"></i> Clear</button>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                    <div>
+                        <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Filter by Month</label>
+                        <input type="month" id="filterMonth" oninput="renderTable()" class="w-full border rounded px-2 py-1 text-xs outline-none bg-gray-50 cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Filter by Date</label>
+                        <input type="date" id="filterDate" oninput="renderTable()" class="w-full border rounded px-2 py-1 text-xs outline-none bg-gray-50 cursor-pointer">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-medium text-gray-600 mb-0.5">Search Name / Barcode</label>
+                        <input type="text" id="filterSearch" placeholder="Type to search..." oninput="renderTable()" class="w-full border rounded px-2 py-1 text-xs outline-none">
+                    </div>
+                </div>
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <!-- Month Filter -->
-                <div>
-                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Filter by Month (Month-wise)</label>
-                    <input type="month" id="filterMonth" oninput="renderTable()" class="w-full border rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 cursor-pointer">
+
+            <!-- Report Table Area -->
+            <div id="reportSection" class="bg-white p-4 rounded-xl shadow-md space-y-3">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <div>
+                        <h2 class="text-xs sm:text-sm font-bold text-gray-800">Daily Audit Report</h2>
+                        <p class="text-[10px] text-gray-500">Filter: <span id="displayDate" class="font-medium text-blue-600">Today</span> | Time: <span id="reportTimestamp">--</span></p>
+                    </div>
+                    <span class="text-[11px] bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full font-medium">Items: <span id="itemCount">0</span></span>
                 </div>
-                <!-- Specific Date Filter (Default set to Today) -->
-                <div>
-                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Filter by Specific Date (Day-wise)</label>
-                    <input type="date" id="filterDate" oninput="renderTable()" class="w-full border rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 cursor-pointer">
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-gray-100 border-b text-gray-700 text-[11px]">
+                                <th class="p-1.5">#</th>
+                                <th class="p-1.5">Barcode / Name</th>
+                                <th class="p-1.5">Wt</th>
+                                <th class="p-1.5">Bill MRP</th>
+                                <th class="p-1.5">Prod MRP</th>
+                                <th class="p-1.5">Variance</th>
+                                <th class="p-1.5">Date</th>
+                                <th class="p-1.5">Photos</th>
+                                <th class="p-1.5 text-center no-print">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="itemsTableBody">
+                            <tr id="emptyRow">
+                                <td colspan="9" class="text-center py-4 text-gray-400">Loading products...</td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
-                <!-- Search Product / Barcode -->
+            </div>
+
+            <!-- Export & Share Section -->
+            <div class="bg-white p-3.5 rounded-xl shadow-md space-y-2.5 no-print border border-blue-100">
+                <h3 class="text-[11px] font-semibold text-gray-700 uppercase tracking-wider border-b pb-1.5"><i class="fa-solid fa-share-nodes text-blue-600 mr-1"></i> Export & Share</h3>
+                
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="shareOrDownloadPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-2 rounded-lg text-xs shadow flex items-center justify-center transition">
+                        <i class="fa-solid fa-file-pdf mr-1"></i> PDF Report
+                    </button>
+                    <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-2 rounded-lg text-xs shadow flex items-center justify-center transition">
+                        <i class="fa-solid fa-file-excel mr-1"></i> Excel Report
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportJSON()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-2 rounded-lg text-xs shadow flex items-center justify-center transition">
+                        <i class="fa-solid fa-floppy-disk mr-1"></i> Backup (JSON)
+                    </button>
+                    <label class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-2 rounded-lg text-xs shadow flex items-center justify-center cursor-pointer transition">
+                        <i class="fa-solid fa-folder-open mr-1"></i> Restore
+                        <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importJSON(event)">
+                    </label>
+                </div>
+
                 <div>
-                    <label class="block text-[11px] font-medium text-gray-600 mb-1">Search Product / Barcode</label>
-                    <input type="text" id="filterSearch" placeholder="Type name or barcode..." oninput="renderTable()" class="w-full border rounded-lg px-3 py-1.5 text-xs outline-none focus:ring-2 focus:ring-blue-500">
+                    <button onclick="sendWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2.5 px-3 rounded-lg text-xs shadow flex items-center justify-center transition">
+                        <i class="fa-brands fa-whatsapp mr-1.5 text-sm"></i> Share Full Report on WhatsApp
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!--  UPDATED: Database Management & Data Deletion Section with Live Preview & Date Range -->
-        <div class="bg-white p-4 rounded-xl shadow-md space-y-4 no-print border border-red-200">
-            <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="text-xs font-semibold text-red-700 uppercase tracking-wider"><i class="fa-solid fa-database mr-1.5"></i> Database Management & Data Deletion (Live Preview)</h3>
-                <span class="text-[10px] bg-red-50 text-red-600 px-2 py-0.5 rounded font-medium">Verify before deleting</span>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <!-- 1. Delete By Month with Preview -->
-                <div class="space-y-2 border p-3 rounded-lg bg-gray-50">
-                    <label class="block text-xs font-bold text-gray-700"><i class="fa-solid fa-calendar-days mr-1 text-red-600"></i> Delete By Month (Month-wise Preview)</label>
-                    <div class="flex gap-2">
-                        <input type="month" id="cleanupMonth" oninput="updateMonthPreview()" class="w-full border rounded-lg px-2.5 py-1.5 text-xs outline-none bg-white">
-                        <button onclick="deleteRecordsByMonth()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow whitespace-nowrap"><i class="fa-solid fa-trash mr-1"></i> Delete Month</button>
-                    </div>
-                    <!-- Live Preview Box -->
-                    <div id="monthPreviewContainer" class="max-h-36 overflow-y-auto text-[11px] bg-white border rounded p-2 text-gray-600">
-                        <span class="text-gray-400">Select a month to preview products...</span>
-                    </div>
+        <!-- SECTION 3: DATABASE CLEANUP -->
+        <div id="dbTab" class="tab-section hidden space-y-3">
+            <div class="bg-white p-3.5 rounded-xl shadow-md space-y-3 border border-red-200">
+                <div class="flex justify-between items-center border-b pb-1.5">
+                    <h3 class="text-[11px] font-semibold text-red-700 uppercase tracking-wider"><i class="fa-solid fa-database mr-1"></i> Database Management & Deletion</h3>
+                    <span class="text-[10px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded font-medium">Verify first</span>
                 </div>
-
-                <!-- 2. Delete By Date Range (Start Date to End Date) with Preview -->
-                <div class="space-y-2 border p-3 rounded-lg bg-gray-50">
-                    <label class="block text-xs font-bold text-gray-700"><i class="fa-solid fa-calendar-week mr-1 text-red-600"></i> Delete By Date Range (Start & End Date)</label>
-                    <div class="grid grid-cols-2 gap-2">
-                        <div>
-                            <span class="text-[10px] text-gray-500 block mb-0.5">Start Date</span>
-                            <input type="date" id="cleanupStartDate" oninput="updateRangePreview()" class="w-full border rounded-lg px-2 py-1 text-xs outline-none bg-white">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <div class="space-y-1.5 border p-2.5 rounded-lg bg-gray-50">
+                        <label class="block text-[11px] font-bold text-gray-700"><i class="fa-solid fa-calendar-days mr-1 text-red-600"></i> Delete By Month</label>
+                        <div class="flex gap-1.5">
+                            <input type="month" id="cleanupMonth" oninput="updateMonthPreview()" class="w-full border rounded px-2 py-1 text-xs outline-none bg-white">
+                            <button onclick="deleteRecordsByMonth()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-[11px] font-medium shadow whitespace-nowrap">Delete</button>
                         </div>
-                        <div>
-                            <span class="text-[10px] text-gray-500 block mb-0.5">End Date</span>
-                            <input type="date" id="cleanupEndDate" oninput="updateRangePreview()" class="w-full border rounded-lg px-2 py-1 text-xs outline-none bg-white">
+                        <div id="monthPreviewContainer" class="max-h-28 overflow-y-auto text-[10px] bg-white border rounded p-1.5 text-gray-600">
+                            <span class="text-gray-400">Select month to preview...</span>
                         </div>
                     </div>
-                    <div class="flex justify-between items-center pt-1">
-                        <span id="rangeCountText" class="text-[10px] text-gray-500 font-medium">0 items selected</span>
-                        <button onclick="deleteRecordsByRange()" class="bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium shadow whitespace-nowrap"><i class="fa-solid fa-trash mr-1"></i> Delete Range</button>
-                    </div>
-                    <!-- Live Preview Box -->
-                    <div id="rangePreviewContainer" class="max-h-28 overflow-y-auto text-[11px] bg-white border rounded p-2 text-gray-600">
-                        <span class="text-gray-400">Select start and end dates to preview products...</span>
+
+                    <div class="space-y-1.5 border p-2.5 rounded-lg bg-gray-50">
+                        <label class="block text-[11px] font-bold text-gray-700"><i class="fa-solid fa-calendar-week mr-1 text-red-600"></i> Delete By Date Range</label>
+                        <div class="grid grid-cols-2 gap-1.5">
+                            <input type="date" id="cleanupStartDate" oninput="updateRangePreview()" class="w-full border rounded px-1.5 py-1 text-[10px] outline-none bg-white">
+                            <input type="date" id="cleanupEndDate" oninput="updateRangePreview()" class="w-full border rounded px-1.5 py-1 text-[10px] outline-none bg-white">
+                        </div>
+                        <div class="flex justify-between items-center pt-0.5">
+                            <span id="rangeCountText" class="text-[10px] text-gray-500 font-medium">0 items</span>
+                            <button onclick="deleteRecordsByRange()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 rounded text-[11px] font-medium shadow whitespace-nowrap">Delete Range</button>
+                        </div>
+                        <div id="rangePreviewContainer" class="max-h-24 overflow-y-auto text-[10px] bg-white border rounded p-1.5 text-gray-600">
+                            <span class="text-gray-400">Select dates to preview...</span>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Clear Entire Database -->
-            <div class="pt-2 border-t">
-                <button onclick="clearEntireDatabase()" class="w-full bg-red-700 hover:bg-red-800 text-white font-medium py-2.5 px-3 rounded-lg text-xs shadow transition flex items-center justify-center">
-                    <i class="fa-solid fa-triangle-exclamation mr-1.5"></i> Clear Entire Database (All Data Permanent Delete)
-                </button>
-            </div>
-        </div>
-
-        <!-- Printable Report Area -->
-        <div id="reportSection" class="bg-white p-5 rounded-xl shadow-md space-y-4">
-            <div class="flex justify-between items-center border-b pb-3">
-                <div>
-                    <h2 class="text-md font-bold text-gray-800">Daily Audit Report (IndexedDB & Cloud Sync)</h2>
-                    <p class="text-xs text-gray-500">Active Filter: <span id="displayDate" class="font-medium text-blue-600">Today's Data</span> | Generated: <span id="reportTimestamp">--</span></p>
+                <div class="pt-1.5 border-t">
+                    <button onclick="clearEntireDatabase()" class="w-full bg-red-700 hover:bg-red-800 text-white font-medium py-2 px-2 rounded-lg text-xs shadow transition flex items-center justify-center">
+                        <i class="fa-solid fa-triangle-exclamation mr-1"></i> Clear Entire Database (Permanent Delete)
+                    </button>
                 </div>
-                <span class="text-xs bg-blue-100 text-blue-800 px-2.5 py-1 rounded-full font-medium">Total Items: <span id="itemCount">0</span></span>
-            </div>
-
-            <!-- Table -->
-            <div class="overflow-x-auto">
-                <table class="w-full text-left border-collapse text-xs">
-                    <thead>
-                        <tr class="bg-gray-100 border-b text-gray-700">
-                            <th class="p-2">#</th>
-                            <th class="p-2">Barcode / Name</th>
-                            <th class="p-2">Weight</th>
-                            <th class="p-2">Bill MRP</th>
-                            <th class="p-2">Product MRP</th>
-                            <th class="p-2">Variance ( / %)</th>
-                            <th class="p-2">Date Added</th>
-                            <th class="p-2">Photos</th>
-                            <th class="p-2 text-center no-print">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="itemsTableBody">
-                        <tr id="emptyRow">
-                            <td colspan="9" class="text-center py-6 text-gray-400">Loading products from database...</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- Export & Action Buttons Layout -->
-        <div class="bg-white p-4 rounded-xl shadow-md space-y-3 no-print">
-            <!-- Row 1: PDF Report & Excel Report -->
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="shareOrDownloadPDF()" class="bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center transition">
-                    <i class="fa-solid fa-file-pdf mr-2 text-base"></i> Share Professional PDF (Portrait)
-                </button>
-                <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center transition">
-                    <i class="fa-solid fa-file-excel mr-2 text-base"></i> Excel Report
-                </button>
-            </div>
-
-            <!-- Row 2: Backup Data (JSON) & Restore Data -->
-            <div class="grid grid-cols-2 gap-3">
-                <button onclick="exportJSON()" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center transition">
-                    <i class="fa-solid fa-floppy-disk mr-2 text-base"></i> Backup Data (JSON)
-                </button>
-                <label class="bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-3 rounded-lg text-sm shadow flex items-center justify-center cursor-pointer transition">
-                    <i class="fa-solid fa-folder-open mr-2 text-base"></i> Restore Data
-                    <input type="file" id="importJsonInput" accept=".json" class="hidden" onchange="importJSON(event)">
-                </label>
-            </div>
-
-            <!-- Row 3: Share Full Report on WhatsApp (Full Width) -->
-            <div>
-                <button onclick="sendWhatsApp()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-3.5 px-4 rounded-lg text-sm shadow flex items-center justify-center transition">
-                    <i class="fa-brands fa-whatsapp mr-2 text-lg"></i> Share Full Report on WhatsApp
-                </button>
             </div>
         </div>
 
     </main>
 
-    <!-- Barcode Scanner Modal Popup with Flashlight Control -->
+    <!-- Barcode Scanner Modal Popup -->
     <div id="scannerModal" class="fixed inset-0 bg-black bg-opacity-75 z-50 flex flex-col items-center justify-center hidden p-4 no-print">
         <div class="bg-white rounded-xl w-full max-w-sm p-4 space-y-3 shadow-2xl">
             <div class="flex justify-between items-center border-b pb-2">
-                <h3 class="font-bold text-gray-800 text-sm"><i class="fa-solid fa-camera mr-2 text-blue-600"></i> Scan Barcode via Camera</h3>
+                <h3 class="font-bold text-gray-800 text-sm"><i class="fa-solid fa-camera mr-2 text-blue-600"></i> Scan Barcode</h3>
                 <button onclick="closeScanner()" class="text-gray-500 hover:text-gray-700 text-xl font-bold px-2">&times;</button>
             </div>
-            <!-- Scanner Container with fixed height -->
-            <div id="interactive" class="w-full h-[250px] overflow-hidden rounded-lg bg-black relative"></div>
+            <div id="interactive" class="w-full h-[220px] overflow-hidden rounded-lg bg-black relative"></div>
             <div class="flex gap-2">
-                <button id="torchToggleBtn" onclick="toggleTorch()" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-3 rounded-lg text-xs flex items-center justify-center shadow"><i class="fa-solid fa-bolt mr-1"></i> Flashlight: OFF</button>
-                <button onclick="closeScanner()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 rounded-lg text-xs">Cancel / Close</button>
+                <button id="torchToggleBtn" onclick="toggleTorch()" class="w-full bg-gray-700 hover:bg-gray-800 text-white font-medium py-2 px-3 rounded-lg text-xs flex items-center justify-center shadow"><i class="fa-solid fa-bolt mr-1"></i> Flashlight</button>
+                <button onclick="closeScanner()" class="w-full bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium py-2 rounded-lg text-xs">Close</button>
             </div>
         </div>
     </div>
 
-    <!-- Image Gallery & Swipe Lightbox Modal with Rotation Option -->
+    <!-- Image Gallery & Swipe Lightbox Modal -->
     <div id="zoomModal" class="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center hidden p-4 no-print" onclick="closeZoomModal()" ontouchstart="handleTouchStart(event)" ontouchend="handleTouchEnd(event)">
         <div class="relative max-w-2xl w-full flex flex-col items-center" onclick="event.stopPropagation()">
             <button onclick="closeZoomModal()" class="absolute -top-12 right-0 text-white text-3xl font-bold px-3 hover:text-gray-300 z-10">&times;</button>
@@ -351,15 +341,13 @@
 
             <div class="flex items-center justify-between w-full mt-3 px-2 gap-2">
                 <span id="imageCounter" class="text-white text-xs bg-gray-800 px-3 py-1 rounded-full">Photo 1 of 1</span>
-                <button onclick="rotateActiveGalleryImage()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg shadow flex items-center gap-1.5"><i class="fa-solid fa-rotate-right"></i> Rotate 90ø</button>
-                <p class="text-gray-300 text-xs hidden sm:block">Swipe or use arrows to browse</p>
+                <button onclick="rotateActiveGalleryImage()" class="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1.5 rounded-lg shadow flex items-center gap-1.5"><i class="fa-solid fa-rotate-right"></i> Rotate 90°</button>
             </div>
         </div>
     </div>
 
-    <!-- JavaScript Logic & Offline-First IndexedDB & Firebase Engine -->
+    <!-- JavaScript Logic -->
     <script>
-        // FIREBASE CONFIGURATION (Yahan apni Firebase project details daal sakte hain)
         const firebaseConfig = {
             apiKey: "YOUR_FIREBASE_API_KEY",
             authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -375,20 +363,29 @@
             if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
                 firebase.initializeApp(firebaseConfig);
                 firebaseInitialized = true;
-                console.log("Firebase initialized successfully.");
             }
-        } catch (e) {
-            console.log("Firebase initialization note (running offline mode):", e);
+        } catch (e) {}
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 font-semibold py-1.5 px-2 rounded-lg text-[11px] sm:text-xs transition flex items-center justify-center gap-1";
+            });
+
+            document.getElementById(tabId).classList.remove('hidden');
+            const activeBtn = document.getElementById('btn-' + tabId);
+            activeBtn.className = "tab-btn flex-1 bg-blue-600 text-white font-semibold py-1.5 px-2 rounded-lg text-[11px] sm:text-xs shadow transition flex items-center justify-center gap-1";
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        // 1. DYNAMIC PWA MANIFEST & ICON GENERATOR
         function generateAppIconsAndManifest() {
             function createPngIcon(size) {
                 const canvas = document.createElement('canvas');
                 canvas.width = size;
                 canvas.height = size;
                 const ctx = canvas.getContext('2d');
-                
                 ctx.fillStyle = '#2563eb';
                 if (ctx.roundRect) {
                     ctx.beginPath();
@@ -397,41 +394,17 @@
                 } else {
                     ctx.fillRect(0, 0, size, size);
                 }
-
                 ctx.fillStyle = 'white';
                 ctx.fillRect(size * 0.25, size * 0.22, size * 0.5, size * 0.56);
-
                 ctx.fillStyle = '#1e3a8a';
                 ctx.font = `900 ${size * 0.22}px Arial`;
                 ctx.textAlign = 'center';
                 ctx.fillText('MRP', size * 0.5, size * 0.68);
-
-                ctx.fillStyle = '#16a34a';
-                ctx.beginPath();
-                ctx.arc(size * 0.74, size * 0.74, size * 0.18, 0, Math.PI * 2);
-                ctx.fill();
-
-                ctx.strokeStyle = 'white';
-                ctx.lineWidth = size * 0.03;
-                ctx.lineCap = 'round';
-                ctx.lineJoin = 'round';
-                ctx.beginPath();
-                ctx.moveTo(size * 0.68, size * 0.74);
-                ctx.lineTo(size * 0.80, size * 0.74);
-                ctx.moveTo(size * 0.74, size * 0.68);
-                ctx.lineTo(size * 0.80, size * 0.74);
-                ctx.lineTo(size * 0.74, size * 0.80);
-                ctx.stroke();
-
                 return canvas.toDataURL('image/png');
             }
-
             const icon192 = createPngIcon(192);
-            const icon512 = createPngIcon(512);
-
             document.getElementById('faviconLink').href = icon192;
             document.getElementById('appleTouchIcon').href = icon192;
-
             const manifestObj = {
                 "name": "MRP and Barcode Audit Tool",
                 "short_name": "MRP Audit",
@@ -439,19 +412,13 @@
                 "display": "standalone",
                 "background_color": "#f3f4f6",
                 "theme_color": "#2563eb",
-                "icons": [
-                    { "src": icon192, "sizes": "192x192", "type": "image/png" },
-                    { "src": icon512, "sizes": "512x512", "type": "image/png" }
-                ]
+                "icons": [{ "src": icon192, "sizes": "192x192", "type": "image/png" }]
             };
-
             const blob = new Blob([JSON.stringify(manifestObj)], { type: 'application/manifest+json' });
             document.getElementById('pwaManifest').setAttribute('href', URL.createObjectURL(blob));
         }
-
         generateAppIconsAndManifest();
 
-        // 2. WEIGHT PRESET SELECTOR & QUICK CHIPS FUNCTIONS
         function setQuickWeight(val) {
             document.getElementById('productWeight').value = val;
             const select = document.getElementById('weightSelect');
@@ -471,35 +438,23 @@
             const select = document.getElementById('weightSelect');
             let currentIndex = select.selectedIndex;
             if (currentIndex === -1) currentIndex = 0;
-            
             let newIndex = currentIndex + direction;
-            if (newIndex >= select.options.length) {
-                newIndex = 0; 
-            } else if (newIndex < 0) {
-                newIndex = select.options.length - 1; 
-            }
-            
+            if (newIndex >= select.options.length) newIndex = 0;
+            else if (newIndex < 0) newIndex = select.options.length - 1;
             select.selectedIndex = newIndex;
             selectPresetWeight(select.value);
         }
 
-        // 3. INDEXEDDB OFFLINE STORAGE & FIREBASE SYNC ENGINE
         let db = null;
         let auditItems = [];
 
         function initIndexedDB() {
             return new Promise((resolve, reject) => {
                 const request = indexedDB.open('MRPAuditOfflineDB', 1);
-
-                request.onerror = (event) => {
-                    console.error("IndexedDB error:", event.target.error);
-                    reject(event.target.error);
-                };
-
+                request.onerror = (event) => reject(event.target.error);
                 request.onsuccess = (event) => {
                     db = event.target.result;
                     loadAllAuditItems().then(async (items) => {
-                        // Migration from localStorage if needed
                         if (items.length === 0) {
                             const legacyData = localStorage.getItem('auditItems');
                             if (legacyData) {
@@ -514,17 +469,12 @@
                                                 firebase.database().ref('auditItems/' + item.id).set(item);
                                             }
                                         }
-                                        transaction.oncomplete = () => {
-                                            loadAllAuditItems();
-                                        };
+                                        transaction.oncomplete = () => loadAllAuditItems();
                                     }
-                                } catch (e) {
-                                    console.error("Migration parse error:", e);
-                                }
+                                } catch (e) {}
                             }
                         }
 
-                        // Load from Firebase if initialized
                         if (firebaseInitialized) {
                             firebase.database().ref('auditItems').on('value', (snapshot) => {
                                 const fbData = snapshot.val();
@@ -543,11 +493,9 @@
                                 }
                             });
                         }
-
                         resolve(db);
                     });
                 };
-
                 request.onupgradeneeded = (event) => {
                     const database = event.target.result;
                     if (!database.objectStoreNames.contains('auditItems')) {
@@ -559,14 +507,10 @@
 
         function saveItemToIndexedDB(item) {
             return new Promise((resolve, reject) => {
-                if (!db) {
-                    resolve();
-                    return;
-                }
+                if (!db) { resolve(); return; }
                 const transaction = db.transaction(['auditItems'], 'readwrite');
                 const store = transaction.objectStore('auditItems');
                 const request = store.put(item);
-
                 request.onsuccess = () => {
                     if (firebaseInitialized) {
                         firebase.database().ref('auditItems/' + item.id).set(item);
@@ -583,7 +527,6 @@
                 const transaction = db.transaction(['auditItems'], 'readwrite');
                 const store = transaction.objectStore('auditItems');
                 const request = store.delete(id);
-
                 request.onsuccess = () => {
                     if (firebaseInitialized) {
                         firebase.database().ref('auditItems/' + id).remove();
@@ -596,29 +539,20 @@
 
         function loadAllAuditItems() {
             return new Promise((resolve, reject) => {
-                if (!db) {
-                    resolve([]);
-                    return;
-                }
+                if (!db) { resolve([]); return; }
                 const transaction = db.transaction(['auditItems'], 'readonly');
                 const store = transaction.objectStore('auditItems');
                 const request = store.getAll();
-
                 request.onsuccess = (event) => {
                     auditItems = event.target.result || [];
                     auditItems.sort((a, b) => b.id - a.id);
                     renderTable();
                     resolve(auditItems);
                 };
-
-                request.onerror = (e) => {
-                    console.error("Error loading items:", e);
-                    reject(e.target.error);
-                };
+                request.onerror = (e) => reject(e.target.error);
             });
         }
 
-        // 4. NETWORK STATUS MONITOR
         window.addEventListener('online', handleOnlineStatus);
         window.addEventListener('offline', handleOfflineStatus);
 
@@ -626,21 +560,20 @@
             const badge = document.getElementById('networkStatusBadge');
             const dot = document.getElementById('networkDot');
             const text = document.getElementById('networkText');
-            badge.className = "bg-emerald-700 text-white text-[11px] px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 shadow-sm";
-            dot.className = "w-2 h-2 rounded-full bg-emerald-300 animate-pulse";
-            text.innerText = "Online (Synced)";
+            badge.className = "bg-emerald-700 text-white text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shadow-sm";
+            dot.className = "w-1.5 h-1.5 rounded-full bg-emerald-300 animate-pulse";
+            text.innerText = "Online";
         }
 
         function handleOfflineStatus() {
             const badge = document.getElementById('networkStatusBadge');
             const dot = document.getElementById('networkDot');
             const text = document.getElementById('networkText');
-            badge.className = "bg-amber-600 text-white text-[11px] px-2.5 py-1 rounded-full font-medium flex items-center gap-1.5 shadow-sm";
-            dot.className = "w-2 h-2 rounded-full bg-amber-200";
-            text.innerText = "Offline Mode (Saved Locally)";
+            badge.className = "bg-amber-600 text-white text-[10px] px-2 py-0.5 rounded-full font-medium flex items-center gap-1 shadow-sm";
+            dot.className = "w-1.5 h-1.5 rounded-full bg-amber-200";
+            text.innerText = "Offline";
         }
 
-        // IST DATE HELPER
         function getISTDateString() {
             try {
                 return new Intl.DateTimeFormat('en-CA', {
@@ -662,7 +595,6 @@
         
         const today = getISTDateString();
         dateInput.value = today;
-        
         filterDateInput.value = today;
         filterMonthInput.value = today.substring(0, 7);
         updateDisplayFilterText();
@@ -670,19 +602,13 @@
         const currentFormattedTime = new Date().toLocaleTimeString('en-IN', { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit' });
         reportTimestamp.innerText = `${formatDateToDDMMYYYY(today)} ${currentFormattedTime}`;
 
-        dateInput.addEventListener('change', () => {
-            updateDisplayFilterText();
-        });
-
+        dateInput.addEventListener('change', () => updateDisplayFilterText());
         filterMonthInput.addEventListener('change', (e) => {
             if(e.target.value) filterDateInput.value = '';
             updateDisplayFilterText();
         });
-
         filterDateInput.addEventListener('change', (e) => {
-            if(e.target.value) {
-                filterMonthInput.value = e.target.value.substring(0, 7);
-            }
+            if(e.target.value) filterMonthInput.value = e.target.value.substring(0, 7);
             updateDisplayFilterText();
         });
 
@@ -703,13 +629,10 @@
         function formatDateToDDMMYYYY(dateStr) {
             if (!dateStr || dateStr.includes('All')) return dateStr;
             const parts = dateStr.split('-');
-            if (parts.length === 3) {
-                return `${parts[2]}-${parts[1]}-${parts[0]}`;
-            }
+            if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
             return dateStr;
         }
 
-        // EXPANDED UNIVERSAL DATABASE
         const productDatabase = {
             "8901030547201": { name: "Surf Excel Easy Wash", weight: "1kg" },
             "8901490223114": { name: "Tata Salt Vacuum Evaporated", weight: "1kg" },
@@ -741,7 +664,6 @@
         let currentPhotos = [];
         let html5QrCode = null;
         let torchState = false;
-
         let activeGalleryPhotos = [];
         let activeGalleryIndex = 0;
         let activeGalleryItemId = null;
@@ -770,7 +692,6 @@
         async function importJSON(event) {
             const file = event.target.files[0];
             if (!file) return;
-
             const reader = new FileReader();
             reader.onload = async function(e) {
                 try {
@@ -785,13 +706,12 @@
                         renderTable();
                         updateMonthPreview();
                         updateRangePreview();
-                        alert(' Backup successfully import ho gaya hai!');
+                        alert(' Backup successfully import ho gaya hai!');
                     } else {
-                        alert(' Invalid JSON format.');
+                        alert(' Invalid JSON format.');
                     }
                 } catch (err) {
-                    console.error("JSON Parse Error:", err);
-                    alert(' File read karne mein error aaya.');
+                    alert(' File read karne mein error aaya.');
                 }
                 event.target.value = '';
             };
@@ -809,15 +729,11 @@
 
         function openItemPhotosModal(itemId, photoIndex) {
             const item = auditItems.find(i => i.id === itemId);
-            if (item && item.photos && item.photos.length > 0) {
-                openGalleryModal(item.photos, photoIndex, itemId);
-            }
+            if (item && item.photos && item.photos.length > 0) openGalleryModal(item.photos, photoIndex, itemId);
         }
 
         function openCurrentPhotosModal(photoIndex) {
-            if (currentPhotos && currentPhotos.length > 0) {
-                openGalleryModal(currentPhotos, photoIndex, null);
-            }
+            if (currentPhotos && currentPhotos.length > 0) openGalleryModal(currentPhotos, photoIndex, null);
         }
 
         function updateZoomModalImage() {
@@ -864,7 +780,6 @@
             if (touchEndX > touchStartX + 50) prevImage();
         }
 
-        // IMAGE ROTATION UTILITY (Optimized 75% Quality)
         function rotateBase64Image(base64String, degrees = 90) {
             return new Promise((resolve) => {
                 const img = new Image();
@@ -914,23 +829,20 @@
             }
         }
 
-        // CAMERA SCANNER
         async function startScanner() {
             const modal = document.getElementById('scannerModal');
             modal.classList.remove('hidden');
-
             setTimeout(async () => {
                 try {
                     if (!html5QrCode) html5QrCode = new Html5Qrcode("interactive");
-                    
-                    const config = { fps: 10, qrbox: { width: 250, height: 150 } };
+                    const config = { fps: 10, qrbox: { width: 220, height: 130 } };
                     try {
                         await html5QrCode.start({ facingMode: "environment" }, config, onScanSuccess, () => {});
                     } catch (envErr) {
                         await html5QrCode.start({ facingMode: "user" }, config, onScanSuccess, () => {});
                     }
                 } catch (err) {
-                    alert(" Camera Access Error! Please grant camera permission.");
+                    alert(" Camera Access Error!");
                     closeScanner();
                 }
             }, 300);
@@ -963,7 +875,6 @@
             }
         }
 
-        // LOCAL-FIRST LOOKUP + ONLINE API FALLBACK
         async function lookupProduct() {
             const barcode = document.getElementById('barcodeInput').value.trim();
             if(!barcode) return;
@@ -974,7 +885,6 @@
                 document.getElementById('productWeight').value = localMatch.weight || '';
                 document.getElementById('oldMrp').value = localMatch.newMrp || localMatch.oldMrp || '';
                 document.getElementById('newMrp').value = '';
-                
                 if (localMatch.photos && localMatch.photos.length > 0) {
                     currentPhotos = [...localMatch.photos];
                     renderPhotoPreviews();
@@ -998,11 +908,8 @@
                     const prod = data.product;
                     const name = prod.product_name || prod.product_name_en || "Unknown Product";
                     const weight = prod.quantity || prod.serving_size || "";
-                    
                     document.getElementById('productName').value = name;
-                    if(weight) {
-                        document.getElementById('productWeight').value = weight;
-                    }
+                    if(weight) document.getElementById('productWeight').value = weight;
                     document.getElementById('oldMrp').value = '';
                     document.getElementById('newMrp').value = '';
 
@@ -1015,9 +922,7 @@
                         });
                     }
                 }
-            } catch (e) {
-                console.log("API lookup failed or offline:", e);
-            }
+            } catch (e) {}
         }
 
         function fetchImageAsBase64(url, callback) {
@@ -1059,13 +964,12 @@
         function renderPhotoPreviews() {
             const container = document.getElementById('imagePreviewContainer');
             container.innerHTML = '';
-            document.getElementById('photoCount').innerText = `${currentPhotos.length} photo(s) selected`;
+            document.getElementById('photoCount').innerText = `${currentPhotos.length} photo`;
             currentPhotos.forEach((photo, index) => {
                 container.innerHTML += `
-                    <div class="relative w-16 h-16 border rounded-lg overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center">
+                    <div class="relative w-11 h-11 border rounded overflow-hidden shadow-sm bg-gray-50 flex items-center justify-center">
                         <img src="${photo}" class="w-full h-full object-cover cursor-pointer" onclick="openCurrentPhotosModal(${index})">
-                        <button type="button" onclick="rotateCurrentPhoto(${index})" class="absolute bottom-0 left-0 bg-blue-600 text-white w-5 h-5 flex items-center justify-center text-[10px]" title="Rotate Photo"></button>
-                        <button type="button" onclick="currentPhotos.splice(${index},1);renderPhotoPreviews()" class="absolute top-0 right-0 bg-red-600 text-white w-5 h-5 flex items-center justify-center text-xs" title="Delete">&times;</button>
+                        <button type="button" onclick="currentPhotos.splice(${index},1);renderPhotoPreviews()" class="absolute top-0 right-0 bg-red-600 text-white w-4 h-4 flex items-center justify-center text-[9px]" title="Delete">&times;</button>
                     </div>`;
             });
         }
@@ -1080,12 +984,12 @@
             const selectedDate = dateInput.value;
 
             if(!name || !newMrp || !oldMrp) {
-                alert(' Kripya Product Name, Bill MRP (Old MRP) aur Product MRP (New MRP) zaroor bharein!');
+                alert(' Kripya Product Name, Bill MRP aur Product MRP zaroor bharein!');
                 return;
             }
 
             if (parseFloat(oldMrp) === parseFloat(newMrp)) {
-                alert(' Error: Bill MRP (Old MRP) aur Product MRP (New MRP) same nahi ho sakte!');
+                alert(' Error: Bill MRP aur Product MRP same nahi ho sakte!');
                 return;
             }
 
@@ -1126,7 +1030,8 @@
             renderTable();
             updateMonthPreview();
             updateRangePreview();
-            document.getElementById('barcodeInput').focus();
+            
+            switchTab('reportTab');
         }
 
         function editItem(id) {
@@ -1142,17 +1047,18 @@
             updateDisplayFilterText();
             currentPhotos = [...item.photos];
             renderPhotoPreviews();
-            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-orange-600 mr-2"></i> Edit Product Entry`;
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-orange-600 mr-1.5"></i> Edit Product Entry`;
             document.getElementById('submitBtn').innerHTML = `<i class="fa-solid fa-rotate-right mr-1"></i> Update Product`;
-            document.getElementById('cancelEditBtn').classList.add('hidden');
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            
+            switchTab('entryTab');
         }
 
         function cancelEdit() {
             document.getElementById('editItemId').value = '';
             resetForm();
-            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-cart-plus text-blue-600 mr-2"></i> Product Entry Form`;
-            document.getElementById('submitBtn').innerHTML = `<i class="fa-solid fa-plus mr-1"></i> Add to Report List (Offline & Cloud Safe)`;
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-cart-plus text-blue-600 mr-1.5"></i> Product Entry Form`;
+            document.getElementById('submitBtn').innerHTML = `<i class="fa-solid fa-plus mr-1"></i> Add to Report List`;
             document.getElementById('cancelEditBtn').classList.add('hidden');
         }
 
@@ -1168,22 +1074,21 @@
             renderPhotoPreviews();
         }
 
-        //  NEW LIVE PREVIEW & DELETE FUNCTIONS FOR MONTH & DATE RANGE
         function updateMonthPreview() {
             const monthVal = document.getElementById('cleanupMonth').value;
             const container = document.getElementById('monthPreviewContainer');
             if(!monthVal) {
-                container.innerHTML = '<span class="text-gray-400">Select a month to preview products...</span>';
+                container.innerHTML = '<span class="text-gray-400">Select month to preview...</span>';
                 return;
             }
             const matching = auditItems.filter(item => item.dateAdded && item.dateAdded.substring(0, 7) === monthVal);
             if(matching.length === 0) {
-                container.innerHTML = `<span class="text-red-500 font-medium">No products found for ${monthVal}.</span>`;
+                container.innerHTML = `<span class="text-red-500">No products found for ${monthVal}.</span>`;
                 return;
             }
-            let html = `<div class="font-bold text-red-700 mb-1">Found ${matching.length} item(s) to delete:</div><ul class="space-y-1">`;
+            let html = `<div class="font-bold text-red-700 mb-0.5">${matching.length} item(s):</div><ul class="space-y-0.5">`;
             matching.forEach((item, idx) => {
-                html += `<li class="border-b pb-0.5 flex justify-between items-center"><span>${idx+1}. <b>${item.name}</b> (${item.weight})</span> <span class="text-gray-500">${formatDateToDDMMYYYY(item.dateAdded)} | ${item.newMrp}</span></li>`;
+                html += `<li class="flex justify-between border-b pb-0.5"><span>${idx+1}. ${item.name}</span> <span>${item.dateAdded} | ${item.newMrp}</span></li>`;
             });
             html += `</ul>`;
             container.innerHTML = html;
@@ -1196,28 +1101,28 @@
             const countText = document.getElementById('rangeCountText');
 
             if(!startDate || !endDate) {
-                container.innerHTML = '<span class="text-gray-400">Select both start and end dates...</span>';
-                countText.innerText = '0 items selected';
+                container.innerHTML = '<span class="text-gray-400">Select dates...</span>';
+                countText.innerText = '0 items';
                 return;
             }
 
             if(startDate > endDate) {
-                container.innerHTML = '<span class="text-red-500 font-medium">Start date cannot be after end date!</span>';
-                countText.innerText = 'Invalid range';
+                container.innerHTML = '<span class="text-red-500">Start > End date!</span>';
+                countText.innerText = 'Invalid';
                 return;
             }
 
             const matching = auditItems.filter(item => item.dateAdded >= startDate && item.dateAdded <= endDate);
-            countText.innerText = `${matching.length} item(s) selected`;
+            countText.innerText = `${matching.length} items`;
 
             if(matching.length === 0) {
-                container.innerHTML = `<span class="text-red-500 font-medium">No products found between ${formatDateToDDMMYYYY(startDate)} and ${formatDateToDDMMYYYY(endDate)}.</span>`;
+                container.innerHTML = `<span class="text-red-500">No products found.</span>`;
                 return;
             }
 
-            let html = `<div class="font-bold text-red-700 mb-1">Found ${matching.length} item(s) to delete:</div><ul class="space-y-1">`;
+            let html = `<div class="font-bold text-red-700 mb-0.5">${matching.length} item(s):</div><ul class="space-y-0.5">`;
             matching.forEach((item, idx) => {
-                html += `<li class="border-b pb-0.5 flex justify-between items-center"><span>${idx+1}. <b>${item.name}</b> (${item.weight})</span> <span class="text-gray-500">${formatDateToDDMMYYYY(item.dateAdded)} | ${item.newMrp}</span></li>`;
+                html += `<li class="flex justify-between border-b pb-0.5"><span>${idx+1}. ${item.name}</span> <span>${item.dateAdded} | ${item.newMrp}</span></li>`;
             });
             html += `</ul>`;
             container.innerHTML = html;
@@ -1225,64 +1130,42 @@
 
         async function deleteRecordsByMonth() {
             const monthVal = document.getElementById('cleanupMonth').value;
-            if(!monthVal) {
-                alert('Kripya cleanup ke liye month select karein.');
-                return;
-            }
+            if(!monthVal) { alert('Select month.'); return; }
             const matching = auditItems.filter(item => item.dateAdded && item.dateAdded.substring(0, 7) === monthVal);
-            if(matching.length === 0) {
-                alert('Is month mein delete karne ke liye koi product available nahi hai.');
-                return;
-            }
-            if(!confirm(` Kya aap ${monthVal} ke ${matching.length} products ko local storage aur Firebase se delete karna chahte hain?`)) return;
+            if(matching.length === 0) { alert('No products found.'); return; }
+            if(!confirm(` Delete ${matching.length} products for ${monthVal}?`)) return;
 
-            for(let item of matching) {
-                await deleteItemFromIndexedDB(item.id);
-            }
+            for(let item of matching) await deleteItemFromIndexedDB(item.id);
             auditItems = auditItems.filter(item => !(item.dateAdded && item.dateAdded.substring(0, 7) === monthVal));
             renderTable();
             updateMonthPreview();
-            alert(` ${monthVal} ka saara data successfully delete kar diya gaya hai.`);
+            alert(' Deleted successfully.');
         }
 
         async function deleteRecordsByRange() {
             const startDate = document.getElementById('cleanupStartDate').value;
             const endDate = document.getElementById('cleanupEndDate').value;
-            if(!startDate || !endDate) {
-                alert('Kripya start date aur end date dono select karein.');
-                return;
-            }
-            if(startDate > endDate) {
-                alert('Start date end date ke baad ki nahi ho sakti!');
-                return;
-            }
+            if(!startDate || !endDate) { alert('Select dates.'); return; }
+            if(startDate > endDate) { alert('Invalid date range.'); return; }
             const matching = auditItems.filter(item => item.dateAdded >= startDate && item.dateAdded <= endDate);
-            if(matching.length === 0) {
-                alert('Selected date range mein delete karne ke liye koi product available nahi hai.');
-                return;
-            }
-            if(!confirm(` Kya aap ${formatDateToDDMMYYYY(startDate)} se ${formatDateToDDMMYYYY(endDate)} tak ke ${matching.length} products ko delete karna chahte hain?`)) return;
+            if(matching.length === 0) { alert('No products found.'); return; }
+            if(!confirm(` Delete ${matching.length} products in range?`)) return;
 
-            for(let item of matching) {
-                await deleteItemFromIndexedDB(item.id);
-            }
+            for(let item of matching) await deleteItemFromIndexedDB(item.id);
             auditItems = auditItems.filter(item => !(item.dateAdded >= startDate && item.dateAdded <= endDate));
             renderTable();
             updateRangePreview();
-            alert(` Selected date range ka saara data successfully delete kar diya gaya hai.`);
+            alert(' Deleted successfully.');
         }
 
         async function clearEntireDatabase() {
-            if(!confirm(' Chetawani: Kya aap poora database (Local IndexedDB + Firebase) permanently delete karna chahte hain?')) return;
-
-            for(let item of auditItems) {
-                await deleteItemFromIndexedDB(item.id);
-            }
+            if(!confirm(' Delete entire database permanently?')) return;
+            for(let item of auditItems) await deleteItemFromIndexedDB(item.id);
             auditItems = [];
             renderTable();
             updateMonthPreview();
             updateRangePreview();
-            alert(' Poora database successfully clear kar diya gaya hai.');
+            alert(' Database cleared.');
         }
 
         function getFilteredItems() {
@@ -1313,7 +1196,7 @@
             document.getElementById('itemCount').innerText = filteredItems.length;
 
             if(filteredItems.length === 0) {
-                tbody.innerHTML = `<tr id="emptyRow"><td colspan="9" class="text-center py-6 text-gray-400">No products found for the selected month/date.</td></tr>`;
+                tbody.innerHTML = `<tr id="emptyRow"><td colspan="9" class="text-center py-4 text-gray-400">No products found.</td></tr>`;
                 return;
             }
 
@@ -1321,9 +1204,9 @@
             filteredItems.forEach((item, index) => {
                 let photosHtml = '<span class="text-gray-400 text-[10px]">No Photo</span>';
                 if(item.photos && item.photos.length > 0) {
-                    photosHtml = '<div class="flex items-center space-x-1.5 flex-wrap gap-1">';
+                    photosHtml = '<div class="flex items-center space-x-1 flex-wrap gap-0.5">';
                     item.photos.forEach((p, pIdx) => {
-                        photosHtml += `<img src="${p}" class="w-9 h-9 object-cover rounded-md border cursor-pointer shadow-sm" onclick="openItemPhotosModal(${item.id}, ${pIdx})">`;
+                        photosHtml += `<img src="${p}" class="w-7 h-7 object-cover rounded border cursor-pointer" onclick="openItemPhotosModal(${item.id}, ${pIdx})">`;
                     });
                     photosHtml += '</div>';
                 }
@@ -1335,33 +1218,33 @@
                     const diff = nVal - oVal;
                     const pct = ((diff / oVal) * 100).toFixed(1);
                     if (diff > 0) {
-                        varianceHtml = `<span class="text-emerald-700 font-semibold">+${diff} (+${pct}%)</span>`;
+                        varianceHtml = `<span class="text-emerald-700 font-semibold">+${diff} (+${pct}%)</span>`;
                     } else if (diff < 0) {
-                        varianceHtml = `<span class="text-red-600 font-semibold">-${Math.abs(diff)} (${pct}%)</span>`;
+                        varianceHtml = `<span class="text-red-600 font-semibold">-${Math.abs(diff)} (${pct}%)</span>`;
                     } else {
-                        varianceHtml = `<span class="text-gray-600 font-medium">No Change</span>`;
+                        varianceHtml = `<span class="text-gray-600">No Change</span>`;
                     }
                 }
 
                 const tr = document.createElement('tr');
                 tr.className = 'border-b hover:bg-gray-50';
                 tr.innerHTML = `
-                    <td class="p-2 font-medium">${index + 1}</td>
-                    <td class="p-2">
+                    <td class="p-1.5 font-medium">${index + 1}</td>
+                    <td class="p-1.5">
                         <div class="font-semibold text-gray-800">${item.name}</div>
-                        <div class="text-gray-400 text-[10px]">BC: ${item.barcode}</div>
+                        <div class="text-gray-400 text-[9px]">BC: ${item.barcode}</div>
                     </td>
-                    <td class="p-2">${item.weight}</td>
-                    <td class="p-2 text-red-600 line-through">${item.oldMrp}</td>
-                    <td class="p-2 font-bold text-green-700">${item.newMrp}</td>
-                    <td class="p-2">${varianceHtml}</td>
-                    <td class="p-2 font-medium text-gray-600">${formatDateToDDMMYYYY(item.dateAdded)}</td>
-                    <td class="p-2">${photosHtml}</td>
-                    <td class="p-2 text-center">
-                        <div class="flex items-center justify-center space-x-2">
-                            <button onclick="shareSingleWhatsApp(${item.id})" class="text-emerald-600 p-2 bg-emerald-50 rounded-lg shadow-sm" title="Share on WhatsApp"><i class="fa-brands fa-whatsapp text-sm"></i></button>
-                            <button onclick="editItem(${item.id})" class="text-blue-600 p-2 bg-blue-50 rounded-lg shadow-sm" title="Edit"><i class="fa-solid fa-pen text-sm"></i></button>
-                            <button onclick="deleteItem(${item.id})" class="text-red-500 p-2 bg-red-50 rounded-lg shadow-sm" title="Delete"><i class="fa-solid fa-trash text-sm"></i></button>
+                    <td class="p-1.5">${item.weight}</td>
+                    <td class="p-1.5 text-red-600 line-through">${item.oldMrp}</td>
+                    <td class="p-1.5 font-bold text-green-700">${item.newMrp}</td>
+                    <td class="p-1.5">${varianceHtml}</td>
+                    <td class="p-1.5 text-gray-600">${formatDateToDDMMYYYY(item.dateAdded)}</td>
+                    <td class="p-1.5">${photosHtml}</td>
+                    <td class="p-1.5 text-center">
+                        <div class="flex items-center justify-center space-x-1.5">
+                            <button onclick="shareSingleWhatsApp(${item.id})" class="text-emerald-600 p-1.5 bg-emerald-50 rounded" title="WhatsApp"><i class="fa-brands fa-whatsapp"></i></button>
+                            <button onclick="editItem(${item.id})" class="text-blue-600 p-1.5 bg-blue-50 rounded" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                            <button onclick="deleteItem(${item.id})" class="text-red-500 p-1.5 bg-red-50 rounded" title="Delete"><i class="fa-solid fa-trash"></i></button>
                         </div>
                     </td>
                 `;
@@ -1377,7 +1260,6 @@
             updateRangePreview();
         }
 
-        // WHATSAPP SHARE
         async function shareSingleWhatsApp(id) {
             const item = auditItems.find(i => i.id === id);
             if(!item) return;
@@ -1386,9 +1268,15 @@
             let nVal = parseFloat(item.newMrp) || 0;
             let diff = nVal - oVal;
             let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
-            let varianceStr = diff > 0 ? `+${diff} (+${pct}%)` : (diff < 0 ? `-${Math.abs(diff)} (${pct}%)` : 'No Change');
+            let varianceStr = diff > 0 ? `+${diff} (+${pct}%)` : (diff < 0 ? `-${Math.abs(diff)} (${pct}%)` : 'No Change');
 
-            let text = ` *MRP CHANGE IN DC* \n *Date*: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n*Product:* ${item.name} (${item.weight})\n *Barcode*: ${item.barcode}\n *Bill MRP*: ${item.oldMrp}\n *Product MRP*: ${item.newMrp}\n *Variance*: ${varianceStr}`;
+            let text = ` *MRP CHANGE IN DC* \n` +
+                       ` *Date*: ${formatDateToDDMMYYYY(item.dateAdded)}\n\n` +
+                       ` *Product:* ${item.name} (${item.weight})\n` +
+                       ` *Barcode*: ${item.barcode}\n` +
+                       ` *Bill MRP*: ${item.oldMrp}\n` +
+                       ` *Product MRP*: ${item.newMrp}\n` +
+                       ` *Variance*: ${varianceStr}`;
 
             if (navigator.canShare && item.photos && item.photos.length > 0) {
                 try {
@@ -1410,25 +1298,25 @@
 
         async function sendWhatsApp() {
             const filtered = getFilteredItems();
-            if(filtered.length === 0) {
-                alert('Share karne ke liye koi data available nahi hai.');
-                return;
-            }
+            if(filtered.length === 0) { alert('No data available.'); return; }
 
             const reportDate = filterDateInput.value ? formatDateToDDMMYYYY(filterDateInput.value) : formatDateToDDMMYYYY(getISTDateString());
 
-            let text = ` *MRP CHANGE IN DC* \n *Date*: ${reportDate}\n Total Items: ${filtered.length}\n\n`;
+            let text = ` *MRP CHANGE IN DC - AUDIT REPORT* \n` +
+                       ` *Date*: ${reportDate}\n` +
+                       ` *Total Items*: ${filtered.length}\n\n`;
+
             filtered.forEach((item, i) => {
                 let oVal = parseFloat(item.oldMrp) || 0;
                 let nVal = parseFloat(item.newMrp) || 0;
                 let diff = nVal - oVal;
                 let pct = oVal > 0 ? ((diff / oVal) * 100).toFixed(1) : 0;
-                let varianceStr = diff > 0 ? `+${diff} (+${pct}%)` : (diff < 0 ? `-${Math.abs(diff)} (${pct}%)` : 'No Change');
+                let varianceStr = diff > 0 ? `+${diff} (+${pct}%)` : (diff < 0 ? `-${Math.abs(diff)} (${pct}%)` : 'No Change');
 
-                text += `${i+1}. *${item.name}* (${item.weight})\n`;
-                text += ` Barcode: ${item.barcode}\n`;
-                text += ` Bill MRP: ${item.oldMrp} | Product MRP: ${item.newMrp}\n`;
-                text += ` Variance: ${varianceStr}\n\n`;
+                text += `${i+1} *${item.name}* (${item.weight})\n`;
+                text += `    Barcode: ${item.barcode}\n`;
+                text += `    Bill MRP: ${item.oldMrp} | Product MRP: ${item.newMrp}\n`;
+                text += `    Variance: ${varianceStr}\n\n`;
             });
 
             if (navigator.canShare) {
@@ -1451,13 +1339,9 @@
             window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
         }
 
-        // PDF & EXCEL
         async function shareOrDownloadPDF() {
             const filtered = getFilteredItems();
-            if(filtered.length === 0) {
-                alert('PDF generate karne ke liye koi data available nahi hai.');
-                return;
-            }
+            if(filtered.length === 0) { alert('No data available.'); return; }
 
             const { jsPDF } = window.jspdf;
             const doc = new jsPDF('p', 'mm', 'a4');
@@ -1467,7 +1351,7 @@
             doc.setFont("helvetica", "bold");
             doc.setFontSize(13);
             doc.setTextColor(255, 255, 255);
-            doc.text("MRP CHANGE IN DC", 14, 13);
+            doc.text("MRP CHANGE IN DC - AUDIT REPORT", 14, 13);
 
             doc.setFont("helvetica", "normal");
             doc.setFontSize(8.5);
@@ -1477,15 +1361,11 @@
 
             let maxPhotos = 1;
             filtered.forEach(item => {
-                if (item.photos && item.photos.length > maxPhotos) {
-                    maxPhotos = item.photos.length;
-                }
+                if (item.photos && item.photos.length > maxPhotos) maxPhotos = item.photos.length;
             });
 
             let headRow = ['#', 'Product Name / Barcode', 'Wt', 'Old MRP', 'New MRP', 'Variance', 'Date'];
-            for (let p = 1; p <= maxPhotos; p++) {
-                headRow.push(`Photo ${p}`);
-            }
+            for (let p = 1; p <= maxPhotos; p++) headRow.push(`Photo ${p}`);
 
             let columnStyles = {
                 0: { cellWidth: 7, halign: 'center' },
@@ -1525,9 +1405,7 @@
                     formatDateToDDMMYYYY(item.dateAdded)
                 ];
 
-                for (let p = 0; p < maxPhotos; p++) {
-                    row.push('');
-                }
+                for (let p = 0; p < maxPhotos; p++) row.push('');
                 tableData.push(row);
             }
 
@@ -1576,21 +1454,21 @@
                     doc.setFontSize(8);
                     doc.setTextColor(150, 150, 150);
                     doc.text(pageStr, 210 - 10, 287, { align: 'right' });
-                    doc.text("MRP & Barcode Audit Tool - Offline First", 10, 287);
+                    doc.text("MRP & Barcode Audit Tool", 10, 287);
                 }
             });
 
             const now = new Date();
             const datePart = String(now.getDate()).padStart(2, '0') + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-' + now.getFullYear();
             const timePart = String(now.getHours()).padStart(2, '0') + '-' + String(now.getMinutes()).padStart(2, '0');
-            const fileName = `MRP_change_DC_Portrait_${datePart}_${timePart}.pdf`;
+            const fileName = `MRP_change_DC_${datePart}_${timePart}.pdf`;
 
             const pdfBlob = doc.output('blob');
             const pdfFile = new File([pdfBlob], fileName, { type: 'application/pdf' });
 
             if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
                 try {
-                    await navigator.share({ files: [pdfFile], title: 'MRP Change Report', text: ' *MRP CHANGE IN DC* - Audit Report PDF' });
+                    await navigator.share({ files: [pdfFile], title: 'MRP Change Report', text: ' *MRP CHANGE IN DC* - Audit Report PDF' });
                     return;
                 } catch (err) {}
             }
@@ -1600,10 +1478,7 @@
 
         function exportToExcel() {
             const filtered = getFilteredItems();
-            if(filtered.length === 0) {
-                alert('Excel export ke liye koi data available nahi hai.');
-                return;
-            }
+            if(filtered.length === 0) { alert('No data available.'); return; }
             const worksheet = XLSX.utils.json_to_sheet(filtered);
             const workbook = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(workbook, worksheet, "MRP Audit");
